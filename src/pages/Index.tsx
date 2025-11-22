@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Menu, ArrowRight, ShieldCheck, Sparkles, Clock, Quote, Instagram, Twitter, Linkedin, Bot, MoreHorizontal, ArrowUp, Flower2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -47,10 +48,12 @@ const Index = () => {
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-black-light">
             <a href="#funcionalidades" className="hover:text-peach-500 transition-colors">Como funciona</a>
             <a href="#filosofia" className="hover:text-peach-500 transition-colors">Filosofia</a>
-            <a href="#contato" className="hover:text-peach-500 transition-colors">Login</a>
-            <Button className="bg-black-soft text-white hover:bg-gray-800 rounded-full px-5 py-2.5 transition-all transform hover:scale-105">
-              Começar Agora
-            </Button>
+            <Link to="/login" className="hover:text-peach-500 transition-colors">Login</Link>
+            <Link to="/register">
+              <Button className="bg-black-soft text-white hover:bg-gray-800 rounded-full px-5 py-2.5 transition-all transform hover:scale-105">
+                Começar Agora
+              </Button>
+            </Link>
           </div>
 
           <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -63,10 +66,12 @@ const Index = () => {
             <div className="flex flex-col gap-4 text-center">
               <a href="#funcionalidades" className="text-black-soft hover:text-peach-500 transition-colors">Como funciona</a>
               <a href="#filosofia" className="text-black-soft hover:text-peach-500 transition-colors">Filosofia</a>
-              <a href="#contato" className="text-black-soft hover:text-peach-500 transition-colors">Login</a>
-              <Button className="bg-black-soft text-white hover:bg-gray-800 rounded-full">
-                Começar Agora
-              </Button>
+              <Link to="/login" className="text-black-soft hover:text-peach-500 transition-colors">Login</Link>
+              <Link to="/register">
+                <Button className="bg-black-soft text-white hover:bg-gray-800 rounded-full">
+                  Começar Agora
+                </Button>
+              </Link>
             </div>
           </div>
         )}
@@ -95,12 +100,16 @@ const Index = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center reveal active" style={{ transitionDelay: '0.4s' }}>
-            <Button className="bg-black-soft text-white hover:bg-gray-800 px-8 py-4 rounded-full text-lg font-medium transition-all flex items-center gap-2">
-              Iniciar Conversa <ArrowRight className="w-4 h-4" />
-            </Button>
-            <Button variant="outline" className="px-8 py-4 rounded-full text-lg font-medium border-black-soft/20 hover:bg-white/50 text-black-soft">
-              Saiba Mais
-            </Button>
+            <Link to="/register">
+              <Button className="bg-black-soft text-white hover:bg-gray-800 px-8 py-4 rounded-full text-lg font-medium transition-all flex items-center gap-2">
+                Iniciar Conversa <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+            <a href="#funcionalidades">
+              <Button variant="outline" className="px-8 py-4 rounded-full text-lg font-medium border-black-soft/20 hover:bg-white/50 text-black-soft">
+                Saiba Mais
+              </Button>
+            </a>
           </div>
         </div>
 
@@ -248,9 +257,11 @@ const Index = () => {
         <div className="max-w-2xl mx-auto reveal">
           <h2 className="font-serif text-4xl mb-6 text-black-soft">Pronto para organizar sua mente?</h2>
           <p className="text-gray-700 mb-8">Junte-se a milhares de pessoas que encontraram clareza com o PsyMind.</p>
-          <Button className="bg-peach-500 hover:bg-peach-400 text-white px-10 py-4 rounded-full text-lg font-medium transition-all shadow-lg shadow-peach-500/30 transform hover:-translate-y-1">
-            Experimentar Gratuitamente
-          </Button>
+          <Link to="/register">
+            <Button className="bg-peach-500 hover:bg-peach-400 text-white px-10 py-4 rounded-full text-lg font-medium transition-all shadow-lg shadow-peach-500/30 transform hover:-translate-y-1">
+              Experimentar Gratuitamente
+            </Button>
+          </Link>
           <p className="mt-4 text-sm text-gray-500">Não requer cartão de crédito • Cancelamento a qualquer momento</p>
         </div>
       </section>
