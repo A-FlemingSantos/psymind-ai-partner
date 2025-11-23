@@ -13,7 +13,6 @@ const Login = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // TODO: Implement login logic
-    console.log("Login:", { email, password });
     // Simulate authentication
     navigate("/workspace");
   };

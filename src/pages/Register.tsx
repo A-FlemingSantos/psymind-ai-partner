@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowRight, Flower2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -11,15 +12,19 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      alert("As senhas não coincidem!");
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "As senhas não coincidem!"
+      });
       return;
     }
     // TODO: Implement registration logic
-    console.log("Register:", { name, email, password });
     // Simulate authentication
     navigate("/workspace");
   };

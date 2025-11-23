@@ -12,13 +12,7 @@ import {
   RotateCcw,
   Loader2
 } from 'lucide-react';
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-// Função utilitária 'cn' definida localmente para garantir robustez
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from '@/lib/utils';
 
 interface Message {
   id: string;
@@ -61,7 +55,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       setMessages([initialUserMessage]);
       simulateAIResponse(initialUserMessage.content);
     }
-  }, [safeInitialPrompt]); // Dependência atualizada para a versão segura
+  }, [safeInitialPrompt, messages.length]);
 
   // Auto-scroll para o final
   useEffect(() => {
@@ -76,30 +70,32 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, [input]);
 
-  const simulateAIResponse = async (userText: string) => {
+  const simulateAIResponse = (userText: string) => {
     setIsTyping(true);
     
-    // Simula delay de rede
-    setTimeout(() => {
-      const aiResponses = [
-        "Essa é uma questão interessante. Considerando seu contexto atual, sugiro começarmos organizando os pontos principais.",
-        "Entendo como você se sente. Vamos respirar fundo e analisar isso com calma. O que você acha que é a raiz desse sentimento?",
-        "Aqui está um plano preliminar que podemos seguir. Dividi em etapas menores para não parecer tão avassalador.",
-        "Essa perspectiva é válida. Você já considerou olhar por outro ângulo? Talvez focando no que você pode controlar agora.",
-      ];
-      
-      const randomResponse = aiResponses[Math.floor(Math.random() * aiResponses.length)];
-      
-      const newAiMessage: Message = {
-        id: Date.now().toString(),
-        role: 'ai',
-        content: randomResponse,
-        timestamp: new Date()
-      };
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        const aiResponses = [
+          "Essa é uma questão interessante. Considerando seu contexto atual, sugiro começarmos organizando os pontos principais.",
+          "Entendo como você se sente. Vamos respirar fundo e analisar isso com calma. O que você acha que é a raiz desse sentimento?",
+          "Aqui está um plano preliminar que podemos seguir. Dividi em etapas menores para não parecer tão avassalador.",
+          "Essa perspectiva é válida. Você já considerou olhar por outro ângulo? Talvez focando no que você pode controlar agora.",
+        ];
+        
+        const randomResponse = aiResponses[Math.floor(Math.random() * aiResponses.length)];
+        
+        const newAiMessage: Message = {
+          id: Date.now().toString(),
+          role: 'ai',
+          content: randomResponse,
+          timestamp: new Date()
+        };
 
-      setMessages(prev => [...prev, newAiMessage]);
-      setIsTyping(false);
-    }, 2000);
+        setMessages(prev => [...prev, newAiMessage]);
+        setIsTyping(false);
+        resolve();
+      }, 2000);
+    });
   };
 
   const handleSendMessage = () => {

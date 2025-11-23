@@ -23,9 +23,15 @@ import { cn } from '@/lib/utils';
 
 const Workspace: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const saved = localStorage.getItem('activeTab');
+    return saved && ['dashboard', 'projects', 'analytics'].includes(saved) ? saved : 'dashboard';
+  });
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
+    const saved = localStorage.getItem('sidebarOpen');
+    return saved !== null ? JSON.parse(saved) : true;
+  });
   const [chatInput, setChatInput] = useState<string>('');
   
   // Novo estado para controlar a interface de chat
@@ -60,6 +66,22 @@ const Workspace: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    // Garante que ao entrar no Workspace, se não houver activeTab válido, usa 'dashboard'
+    if (!['dashboard', 'projects', 'analytics'].includes(activeTab)) {
+      setActiveTab('dashboard');
+      localStorage.setItem('activeTab', 'dashboard');
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('sidebarOpen', JSON.stringify(isSidebarOpen));
+  }, [isSidebarOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
 
   // Dados iniciais simulados
   const [projects, setProjects] = useState<Project[]>([
@@ -147,11 +169,7 @@ const Workspace: React.FC = () => {
       <div className="h-screen bg-[#FFFBF7] font-sans text-zinc-900 selection:bg-orange-200 overflow-hidden flex">
         <Sidebar 
           activeTab={activeTab} 
-          setActiveTab={(tab) => {
-            setActiveTab(tab);
-            // Se clicar em dashboard, volta para a home
-            if (tab === 'dashboard') setIsChatActive(false);
-          }} 
+          setActiveTab={setActiveTab}
           isOpen={isSidebarOpen}
           toggle={() => setIsSidebarOpen(!isSidebarOpen)}
         />
@@ -225,6 +243,7 @@ const Workspace: React.FC = () => {
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={`Digite para perguntar ao seu ${getModeTranslation(selectedMode).toLowerCase()}...`}
+                  aria-label="Campo de entrada para conversa com assistente"
                   className="w-full min-h-[120px] p-4 pr-4 bg-transparent border-none resize-none focus:outline-none text-zinc-700 placeholder:text-zinc-300 text-lg leading-relaxed rounded-2xl pb-16"
                 />
                 
