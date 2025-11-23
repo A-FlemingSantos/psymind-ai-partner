@@ -9,7 +9,6 @@ import {
   Image as ImageIcon,
   Sparkles,
   Brain,
-  Calendar,
   ChevronDown,
   Target
 } from 'lucide-react';
@@ -20,12 +19,13 @@ import AddProjectModal from '@/components/workspace/AddProjectModal';
 import ChatInterface from '@/components/workspace/ChatInterface';
 import { Project } from '@/types/workspace';
 import { cn } from '@/lib/utils';
+import { useChat } from '@/context/ChatContext';
 
 const Workspace: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>(() => {
     const saved = localStorage.getItem('activeTab');
-    return saved && ['dashboard', 'projects', 'analytics'].includes(saved) ? saved : 'dashboard';
+    return saved && ['dashboard', 'projects', 'conversations'].includes(saved) ? saved : 'dashboard';
   });
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
@@ -34,9 +34,12 @@ const Workspace: React.FC = () => {
   });
   const [chatInput, setChatInput] = useState<string>('');
   
-  // Novo estado para controlar a interface de chat
+  // Estado para controlar a interface de chat
   const [isChatActive, setIsChatActive] = useState<boolean>(false);
   const [initialChatPrompt, setInitialChatPrompt] = useState<string>('');
+
+  // Integração com o Contexto de Chat
+  const { currentConversationId, selectConversation } = useChat();
 
   // Estados de interação (Menus)
   const [isFileMenuOpen, setIsFileMenuOpen] = useState(false);
@@ -49,6 +52,13 @@ const Workspace: React.FC = () => {
   const fileMenuRef = useRef<HTMLDivElement>(null);
   const personalityRef = useRef<HTMLDivElement>(null);
   const modeMenuRef = useRef<HTMLDivElement>(null);
+
+  // Efeito para abrir o chat automaticamente quando uma conversa é selecionada no Sidebar
+  useEffect(() => {
+    if (currentConversationId) {
+      setIsChatActive(true);
+    }
+  }, [currentConversationId]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -69,7 +79,7 @@ const Workspace: React.FC = () => {
 
   useEffect(() => {
     // Garante que ao entrar no Workspace, se não houver activeTab válido, usa 'dashboard'
-    if (!['dashboard', 'projects', 'analytics'].includes(activeTab)) {
+    if (!['dashboard', 'projects', 'conversations'].includes(activeTab)) {
       setActiveTab('dashboard');
       localStorage.setItem('activeTab', 'dashboard');
     }
@@ -147,9 +157,21 @@ const Workspace: React.FC = () => {
 
   const handleStartChat = () => {
     if (!chatInput.trim()) return;
+    // Limpa seleção atual para forçar criação de nova conversa se necessário
+    if (currentConversationId) {
+        // Se já estiver em um chat, isso pode ser ajustado conforme a UX desejada
+        // Por enquanto, vamos assumir que digitar aqui inicia um NOVO contexto ou continua
+    }
     setInitialChatPrompt(chatInput);
     setIsChatActive(true);
     setChatInput(''); // Limpa o input
+  };
+
+  const handleCloseChat = () => {
+    setIsChatActive(false);
+    setInitialChatPrompt('');
+    // Opcional: Limpar seleção ao fechar
+    // selectConversation(''); 
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -181,7 +203,7 @@ const Workspace: React.FC = () => {
             initialPrompt={initialChatPrompt}
             mode={selectedMode}
             personality={selectedPersonality}
-            onClose={() => setIsChatActive(false)}
+            onClose={handleCloseChat}
           />
         </main>
       </div>

@@ -1,8 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Layout, Folder, Calendar, PieChart, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { 
+  Layout, 
+  Folder, 
+  Calendar, 
+  MessageCircle, 
+  Settings, 
+  ChevronLeft, 
+  ChevronRight,
+  ChevronDown,
+  History
+} from 'lucide-react';
 import NavItem from './NavItem';
 import { cn } from '@/lib/utils';
+import { useChat } from '@/context/ChatContext';
 
 interface SidebarProps {
   activeTab: string;
@@ -13,6 +24,8 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, toggle }) => {
   const navigate = useNavigate();
+  const [isHistoryOpen, setIsHistoryOpen] = useState(true); // Começa aberto para facilitar visualização
+  const { conversations, selectConversation, currentConversationId } = useChat();
 
   const handleNavigation = (tab: string) => {
     setActiveTab(tab);
@@ -23,7 +36,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, togg
     } else if (tab === 'dashboard') {
       navigate('/workspace');
     }
-    // 'projects' e 'analytics' não têm página ainda, apenas atualizam o estado visual
+  };
+
+  const handleConversationClick = (id: string) => {
+    selectConversation(id);
+    // Força a ida para o dashboard e marca como 'conversations' visualmente
+    setActiveTab('conversations'); 
+    navigate('/workspace'); 
   };
 
   return (
@@ -46,7 +65,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, togg
         )}
       </div>
 
-      {/* Toggle Button - Absolute position on the border */}
+      {/* Toggle Button */}
       <button 
         onClick={toggle}
         className="absolute -right-3 top-9 bg-zinc-800 text-zinc-400 hover:text-orange-200 border border-zinc-700 rounded-full p-1 shadow-md transition-colors z-30"
@@ -55,7 +74,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, togg
       </button>
 
       {/* Navigation Items */}
-      <nav className="flex-1 px-3 py-4 space-y-2">
+      <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto no-scrollbar">
         <NavItem 
           icon={<Layout size={20} />} 
           label="Dashboard" 
@@ -77,13 +96,70 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, togg
           onClick={() => handleNavigation('calendar')} 
           isCollapsed={!isOpen}
         />
-        <NavItem 
-          icon={<PieChart size={20} />} 
-          label="Análises" 
-          active={activeTab === 'analytics'} 
-          onClick={() => handleNavigation('analytics')} 
-          isCollapsed={!isOpen}
-        />
+
+        {/* Seção Conversas (Expansível) */}
+        {!isOpen ? (
+          // Versão Colapsada (Apenas ícone)
+          <NavItem 
+            icon={<MessageCircle size={20} />} 
+            label="Conversas" 
+            active={activeTab === 'conversations'} 
+            onClick={() => {
+              setIsHistoryOpen(true);
+              toggle(); // Abre a sidebar se clicar no ícone colapsado
+            }} 
+            isCollapsed={true}
+          />
+        ) : (
+          // Versão Expandida (Accordion)
+          <div className="flex flex-col gap-1">
+            <button
+              onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+              className={cn(
+                "flex items-center justify-between w-full px-4 py-3 rounded-xl transition-all duration-300 group",
+                activeTab === 'conversations' || isHistoryOpen
+                  ? "text-orange-100 bg-zinc-800/50" 
+                  : "text-zinc-400 hover:bg-zinc-800 hover:text-orange-200"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <MessageCircle size={20} className="shrink-0" />
+                <span className="font-medium tracking-wide">Conversas</span>
+              </div>
+              
+              {/* Indicador Arrow Down / Right */}
+              <div className="text-zinc-500 group-hover:text-orange-200 transition-colors">
+                {isHistoryOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </div>
+            </button>
+
+            {/* Lista de Histórico */}
+            {isHistoryOpen && (
+              <div className="flex flex-col gap-1 pl-4 animate-in slide-in-from-top-2 duration-200 max-h-60 overflow-y-auto custom-scrollbar">
+                {conversations.length === 0 ? (
+                  <p className="text-xs text-zinc-500 px-4 py-2 italic">Nenhuma conversa ainda.</p>
+                ) : (
+                  conversations.map((chat) => (
+                    <button
+                      key={chat.id}
+                      onClick={() => handleConversationClick(chat.id)}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-colors text-left truncate group w-full",
+                        currentConversationId === chat.id && activeTab === 'conversations'
+                          ? "bg-orange-500/10 text-orange-200 border border-orange-500/20"
+                          : "text-zinc-500 hover:text-orange-100 hover:bg-zinc-800/50"
+                      )}
+                      title={chat.title}
+                    >
+                      <History size={14} className="shrink-0 opacity-70 group-hover:text-orange-300" />
+                      <span className="truncate">{chat.title}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </nav>
 
       {/* User Footer */}
