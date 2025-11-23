@@ -2,13 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    --background: 30 100% 97%;
+    --background: 30 100% 97%; /* #FFFBF7 */
     --foreground: 20 14% 9%;
 
     --card: 0 0% 100%;
@@ -38,7 +34,7 @@ All colors MUST be HSL.
 
     --radius: 1.5rem;
 
-    /* Custom Peach Palette */
+    /* Cores Customizadas mantidas */
     --peach-50: 30 100% 97%;
     --peach-100: 25 100% 95%;
     --peach-200: 25 100% 88%;
@@ -48,7 +44,6 @@ All colors MUST be HSL.
     --peach-600: 25 100% 48%;
     --peach-900: 20 14% 9%;
     
-    /* Custom Black Tones */
     --black-soft: 0 0% 11%;
     --black-light: 0 0% 18%;
 
@@ -63,41 +58,43 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 0 0% 11%;
-    --foreground: 0 0% 98%;
+    /* Novo Tema Escuro "Atelier" - Tons quentes e profundos */
+    --background: 20 14% 8%; /* Fundo quase preto, levemente marrom */
+    --foreground: 30 20% 97%; /* Texto off-white */
 
-    --card: 0 0% 14%;
-    --card-foreground: 0 0% 98%;
+    --card: 20 14% 10%;
+    --card-foreground: 30 20% 97%;
 
-    --popover: 0 0% 11%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 20 14% 10%;
+    --popover-foreground: 30 20% 97%;
 
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 11%;
+    --primary: 30 20% 97%; /* Botões primários claros no dark mode */
+    --primary-foreground: 20 14% 9%;
 
-    --secondary: 0 0% 18%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 20 14% 14%;
+    --secondary-foreground: 30 20% 97%;
 
-    --muted: 0 0% 18%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 20 14% 14%;
+    --muted-foreground: 20 10% 65%;
 
-    --accent: 25 100% 58%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 20 14% 16%;
+    --accent-foreground: 30 20% 97%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
+    --border: 20 14% 14%;
+    --input: 20 14% 14%;
     --ring: 25 100% 58%;
     
-    --sidebar-background: 0 0% 11%;
-    --sidebar-foreground: 0 0% 98%;
+    /* Sidebar Dark Mode */
+    --sidebar-background: 20 14% 6%;
+    --sidebar-foreground: 30 10% 90%;
     --sidebar-primary: 25 100% 58%;
-    --sidebar-primary-foreground: 0 0% 11%;
-    --sidebar-accent: 0 0% 18%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 18%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 20 14% 12%;
+    --sidebar-accent-foreground: 30 10% 97%;
+    --sidebar-border: 20 14% 12%;
     --sidebar-ring: 25 100% 58%;
   }
 }
@@ -108,7 +105,7 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground antialiased selection:bg-peach-200 selection:text-black-soft;
+    @apply bg-background text-foreground antialiased selection:bg-peach-200 selection:text-black-soft dark:selection:bg-orange-900 dark:selection:text-orange-100;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
   
@@ -119,7 +116,7 @@ All colors MUST be HSL.
 
 @layer utilities {
   .glass-card {
-    @apply bg-white/70 backdrop-blur-md border border-white/50;
+    @apply bg-white/70 backdrop-blur-md border border-white/50 dark:bg-black/40 dark:border-white/10;
   }
   
   .font-serif {
@@ -137,15 +134,5 @@ All colors MUST be HSL.
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
   }
 }

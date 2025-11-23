@@ -1,10 +1,19 @@
 import React from 'react';
 
 const FlowerDoodle: React.FC = () => (
-  <svg width="140" height="140" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-zinc-800 opacity-90 animate-in fade-in duration-1000">
+  <svg 
+    width="140" 
+    height="140" 
+    viewBox="0 0 200 200" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg" 
+    // Alterado: Adicionado 'dark:text-zinc-200' para tornar os traços claros no modo escuro
+    className="text-zinc-800 dark:text-zinc-200 opacity-90 animate-in fade-in duration-1000"
+  >
     <g stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       {/* Stem */}
-      <path d="M100 190 C100 190 105 160 100 120" className="text-orange-900" />
+      {/* Alterado: Adicionado 'dark:text-orange-300' para o caule aparecer no fundo escuro */}
+      <path d="M100 190 C100 190 105 160 100 120" className="text-orange-900 dark:text-orange-300" />
       {/* Leaves */}
       <path d="M100 150 C100 150 130 145 140 130" />
       <path d="M100 160 C100 160 70 155 60 140" />
