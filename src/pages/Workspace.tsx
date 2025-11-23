@@ -17,6 +17,7 @@ import Sidebar from '@/components/workspace/Sidebar';
 import FlowerDoodle from '@/components/workspace/FlowerDoodle';
 import ProjectCard from '@/components/workspace/ProjectCard';
 import AddProjectModal from '@/components/workspace/AddProjectModal';
+import ChatInterface from '@/components/workspace/ChatInterface';
 import { Project } from '@/types/workspace';
 import { cn } from '@/lib/utils';
 
@@ -26,15 +27,19 @@ const Workspace: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [chatInput, setChatInput] = useState<string>('');
+  
+  // Novo estado para controlar a interface de chat
+  const [isChatActive, setIsChatActive] = useState<boolean>(false);
+  const [initialChatPrompt, setInitialChatPrompt] = useState<string>('');
 
-  // Chat Interaction States
+  // Estados de interação (Menus)
   const [isFileMenuOpen, setIsFileMenuOpen] = useState(false);
   const [isPersonalityOpen, setIsPersonalityOpen] = useState(false);
   const [isModeMenuOpen, setIsModeMenuOpen] = useState(false);
   const [selectedMode, setSelectedMode] = useState<'Advisor' | 'Planner'>('Advisor');
   const [selectedPersonality, setSelectedPersonality] = useState<string>('Empathetic');
 
-  // Close menus when clicking outside
+  // Refs para fechar menus ao clicar fora
   const fileMenuRef = useRef<HTMLDivElement>(null);
   const personalityRef = useRef<HTMLDivElement>(null);
   const modeMenuRef = useRef<HTMLDivElement>(null);
@@ -56,13 +61,13 @@ const Workspace: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Initial Mock Data - Agora representando Cadernos
+  // Dados iniciais simulados
   const [projects, setProjects] = useState<Project[]>([
     {
       id: 1,
       title: "Diário de Gratidão",
       category: "Pessoal",
-      progress: 100, // Representa preenchimento ou uso
+      progress: 100,
       dueDate: "22 Nov",
       members: [1],
       status: "Ativo"
@@ -82,7 +87,7 @@ const Workspace: React.FC = () => {
       category: "Criativo",
       progress: 20,
       dueDate: "10 Nov",
-      members: [1, 2], // Talvez compartilhado com um editor
+      members: [1, 2],
       status: "Em Rascunho"
     },
     {
@@ -118,9 +123,52 @@ const Workspace: React.FC = () => {
     setIsModalOpen(false);
   };
 
+  const handleStartChat = () => {
+    if (!chatInput.trim()) return;
+    setInitialChatPrompt(chatInput);
+    setIsChatActive(true);
+    setChatInput(''); // Limpa o input
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleStartChat();
+    }
+  };
+
   const getModeTranslation = (mode: string) => {
     return mode === 'Advisor' ? 'Conselheiro' : 'Planejador';
   };
+
+  // Renderiza a interface de chat se estiver ativa
+  if (isChatActive) {
+    return (
+      <div className="h-screen bg-[#FFFBF7] font-sans text-zinc-900 selection:bg-orange-200 overflow-hidden flex">
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={(tab) => {
+            setActiveTab(tab);
+            // Se clicar em dashboard, volta para a home
+            if (tab === 'dashboard') setIsChatActive(false);
+          }} 
+          isOpen={isSidebarOpen}
+          toggle={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
+        <main className={cn(
+          "h-full w-full transition-all duration-300 ease-in-out relative",
+          isSidebarOpen ? "md:ml-64" : "md:ml-20"
+        )}>
+          <ChatInterface 
+            initialPrompt={initialChatPrompt}
+            mode={selectedMode}
+            personality={selectedPersonality}
+            onClose={() => setIsChatActive(false)}
+          />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-[#FFFBF7] font-sans text-zinc-900 selection:bg-orange-200 overflow-hidden">
@@ -131,7 +179,7 @@ const Workspace: React.FC = () => {
         toggle={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
-      {/* Main Content - Dynamic margin based on sidebar state */}
+      {/* Conteúdo Principal */}
       <main 
         className={cn(
           "h-screen overflow-y-auto snap-y snap-proximity scroll-smooth transition-all duration-300 ease-in-out",
@@ -159,36 +207,37 @@ const Workspace: React.FC = () => {
           </div>
         </header>
 
-        {/* Content Container */}
+        {/* Container do Conteúdo */}
         <div className="p-8 max-w-[1600px] mx-auto">
 
-          {/* Hero / Center Message */}
+          {/* Hero / Mensagem Central */}
           <div className="flex flex-col items-center justify-start pt-6 min-h-[85vh] mb-12 animate-in slide-in-from-bottom-4 duration-700 snap-start scroll-mt-28">
             <FlowerDoodle />
             <h1 className="text-4xl md:text-6xl font-serif text-zinc-800 mt-8 mb-4 tracking-tight text-center">
               Olá, o que tem em mente?
             </h1>
             
-            {/* AI Chat Input */}
+            {/* Input de Chat IA */}
             <div className="w-full max-w-2xl mt-8 relative group animate-in fade-in zoom-in-95 duration-700 delay-150">
               <div className="relative bg-white rounded-[2rem] shadow-2xl shadow-orange-500/10 border border-orange-200 p-2 focus-within:ring-2 focus-within:ring-orange-200 transition-all duration-300">
                 <textarea
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
                   placeholder={`Digite para perguntar ao seu ${getModeTranslation(selectedMode).toLowerCase()}...`}
                   className="w-full min-h-[120px] p-4 pr-4 bg-transparent border-none resize-none focus:outline-none text-zinc-700 placeholder:text-zinc-300 text-lg leading-relaxed rounded-2xl pb-16"
                 />
                 
-                {/* Bottom Toolbar */}
+                {/* Barra de Ferramentas Inferior */}
                 <div className="absolute bottom-3 left-3 right-3 flex justify-between items-end">
                   
-                  {/* Left Actions (Attachments & Personalities) */}
+                  {/* Ações à Esquerda (Anexos e Personalidade) */}
                   <div className="flex items-center gap-2">
                     
-                    {/* File Upload Menu */}
+                    {/* Menu de Upload */}
                     <div className="relative" ref={fileMenuRef}>
                       {isFileMenuOpen && (
-                        <div className="absolute bottom-full left-0 mb-2 w-40 bg-white rounded-xl shadow-lg border border-orange-100 p-1.5 flex flex-col gap-1 animate-in slide-in-from-bottom-2 duration-200">
+                        <div className="absolute bottom-full left-0 mb-2 w-40 bg-white rounded-xl shadow-lg border border-orange-100 p-1.5 flex flex-col gap-1 animate-in slide-in-from-bottom-2 duration-200 z-20">
                           <button className="flex items-center gap-2 px-3 py-2 hover:bg-orange-50 rounded-lg text-sm text-zinc-600 hover:text-zinc-900 transition-colors w-full text-left">
                             <FileText size={16} />
                             <span>Documento</span>
@@ -208,10 +257,10 @@ const Workspace: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Personality Menu */}
+                    {/* Menu de Personalidade */}
                     <div className="relative" ref={personalityRef}>
                       {isPersonalityOpen && (
-                        <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-xl shadow-lg border border-orange-100 p-1.5 flex flex-col gap-1 animate-in slide-in-from-bottom-2 duration-200">
+                        <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-xl shadow-lg border border-orange-100 p-1.5 flex flex-col gap-1 animate-in slide-in-from-bottom-2 duration-200 z-20">
                           <div className="px-2 py-1.5 text-xs font-semibold text-zinc-400 uppercase tracking-wider">Personalidade</div>
                           {[
                             { id: 'Empathetic', label: 'Empático' }, 
@@ -249,10 +298,10 @@ const Workspace: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Right Action (Send Mode Button) */}
+                  {/* Ação à Direita (Botão de Enviar e Modos) */}
                   <div className="relative" ref={modeMenuRef}>
                     {isModeMenuOpen && (
-                      <div className="absolute bottom-full right-0 mb-2 w-64 bg-white rounded-2xl shadow-xl border border-orange-100 p-2 flex flex-col gap-1 animate-in slide-in-from-bottom-2 duration-200">
+                      <div className="absolute bottom-full right-0 mb-2 w-64 bg-white rounded-2xl shadow-xl border border-orange-100 p-2 flex flex-col gap-1 animate-in slide-in-from-bottom-2 duration-200 z-20">
                         <button 
                           onClick={() => {
                             setSelectedMode('Advisor');
@@ -297,8 +346,10 @@ const Workspace: React.FC = () => {
                       </button>
                       
                       <button 
+                        onClick={handleStartChat}
                         className="p-2 bg-zinc-800 text-orange-50 rounded-xl hover:bg-zinc-700 transition-colors disabled:opacity-50"
                         disabled={!chatInput.trim()}
+                        title="Enviar"
                       >
                         <ArrowUp size={18} />
                       </button>
@@ -312,7 +363,7 @@ const Workspace: React.FC = () => {
               </p>
             </div>
 
-            {/* Suggestions Grid */}
+            {/* Grid de Sugestões */}
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
               {[
                 { text: "Como posso controlar a ansiedade?", mode: 'Advisor' },
@@ -336,10 +387,9 @@ const Workspace: React.FC = () => {
               ))}
             </div>
 
-            {/* Scroll Indicator Doodle */}
+            {/* Indicador de Scroll (Seta) */}
             <div className="mt-12 animate-bounce duration-2000">
               <svg width="40" height="60" viewBox="0 0 40 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-zinc-400 opacity-90">
-                {/* Reshaped looped arrow shaft */}
                 <path 
                   d="M22 5C32 10 38 25 28 32C18 39 8 22 20 45L20 55" 
                   stroke="currentColor" 
@@ -347,7 +397,6 @@ const Workspace: React.FC = () => {
                   strokeLinecap="round" 
                   strokeLinejoin="round" 
                 />
-                {/* Arrow head */}
                 <path 
                   d="M12 48L20 55L28 48" 
                   stroke="currentColor" 
@@ -359,10 +408,10 @@ const Workspace: React.FC = () => {
             </div>
           </div>
 
-          {/* Main Content Sections */}
+          {/* Seções de Conteúdo Principal (Cadernos e Foco) */}
           <div className="grid grid-cols-1 gap-12 items-start w-full snap-start scroll-mt-28">
 
-            {/* Top Section: Notebooks (Formerly Projects) */}
+            {/* Seção Superior: Cadernos */}
             <div className="w-full space-y-8 min-w-0 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
@@ -400,7 +449,7 @@ const Workspace: React.FC = () => {
                   </div>
                 ))}
 
-                {/* Empty State / Add New Placeholder */}
+                {/* Empty State / Placeholder de Adicionar Novo */}
                 <div className="h-full">
                   <button
                     onClick={() => setIsModalOpen(true)}
@@ -415,7 +464,7 @@ const Workspace: React.FC = () => {
               </div>
             </div>
 
-            {/* Bottom Section: Today's Focus */}
+            {/* Seção Inferior: Foco de Hoje */}
             <div className="w-full animate-in fade-in slide-in-from-bottom-8 duration-700 delay-700">
               <div className="flex items-center justify-between mb-8 h-[52px]">
                 <h3 className="text-2xl font-serif font-semibold text-zinc-900">Foco de Hoje</h3>
@@ -423,7 +472,7 @@ const Workspace: React.FC = () => {
               </div>
 
               <div className="bg-zinc-900 rounded-3xl p-8 text-orange-50 relative overflow-hidden min-h-[300px] flex flex-col md:flex-row gap-8">
-                {/* Decorative background elements */}
+                {/* Elementos decorativos de fundo */}
                 <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
                 <div className="absolute bottom-0 left-0 w-64 h-64 bg-orange-300/10 rounded-full blur-3xl -ml-12 -mb-12 pointer-events-none"></div>
 
