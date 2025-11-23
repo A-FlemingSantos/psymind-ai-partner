@@ -27,7 +27,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => (
       <div className="flex items-center gap-4 text-sm text-zinc-500 mb-auto">
         <span className="flex items-center gap-1.5">
           <Clock size={16} className="text-orange-300" />
-          <span className="font-medium">Created {project.dueDate}</span>
+          <span className="font-medium">Criado em {project.dueDate}</span>
         </span>
       </div>
 
