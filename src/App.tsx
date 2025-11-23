@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 import Workspace from "./pages/Workspace";
 import CalendarPage from "./pages/Calendar";
+import Editor from "./pages/Editor";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,8 @@ const App = () => (
           <Route path="/register" element={<Register />} />
           <Route path="/workspace" element={<Workspace />} />
           <Route path="/calendar" element={<CalendarPage />} />
+          {/* New Route for Editor */}
+          <Route path="/editor" element={<Editor />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
