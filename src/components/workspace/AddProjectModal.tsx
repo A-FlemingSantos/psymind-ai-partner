@@ -1,5 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface AddProjectModalProps {
   isModalOpen: boolean;
@@ -8,20 +9,39 @@ interface AddProjectModalProps {
 }
 
 const AddProjectModal: React.FC<AddProjectModalProps> = ({ isModalOpen, setIsModalOpen, handleAddProject }) => {
+  const navigate = useNavigate();
+
   if (!isModalOpen) return null;
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    // Previne o comportamento padrão imediatamente
+    e.preventDefault();
+    
+    const formData = new FormData(e.currentTarget);
+    const title = formData.get('title') as string;
+
+    // Executa a função original de adicionar à lista (mock)
+    handleAddProject(e);
+
+    // Redireciona para o editor com o título no estado
+    if (title) {
+      navigate('/editor', { state: { initialTitle: title } });
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white w-full max-w-md rounded-3xl p-8 shadow-2xl animate-in zoom-in-95 duration-200">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-zinc-900">Novo Projeto</h2>
+          <h2 className="text-2xl font-bold text-zinc-900">Novo Caderno</h2>
           <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleAddProject} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-zinc-700 mb-1">Título do Projeto</label>
+            <label className="block text-sm font-medium text-zinc-700 mb-1">Título do Caderno</label>
             <input
               name="title"
               type="text"
@@ -56,7 +76,7 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isModalOpen, setIsMod
               type="submit"
               className="flex-1 px-6 py-3 rounded-xl font-medium bg-zinc-900 text-orange-50 hover:bg-zinc-800 transition-colors shadow-lg shadow-zinc-900/20"
             >
-              Criar Projeto
+              Criar Caderno
             </button>
           </div>
         </form>

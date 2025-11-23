@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Layout, 
-  Folder, 
+  Book, 
   Calendar, 
   MessageCircle, 
   Settings, 
@@ -83,8 +83,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, togg
           isCollapsed={!isOpen}
         />
         <NavItem 
-          icon={<Folder size={20} />} 
-          label="Projetos" 
+          icon={<Book size={20} />} 
+          label="Cadernos" 
           active={activeTab === 'projects'} 
           onClick={() => handleNavigation('projects')} 
           isCollapsed={!isOpen}

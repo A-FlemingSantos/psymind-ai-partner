@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   ChevronLeft, 
   Share, 
@@ -30,12 +30,21 @@ import { cn } from "@/lib/utils";
 
 const Editor: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Recupera o título passado via navegação ou usa o padrão
   const [title, setTitle] = useState("Página sem título");
+  
+  useEffect(() => {
+    if (location.state?.initialTitle) {
+      setTitle(location.state.initialTitle);
+    }
+  }, [location.state]);
+
   const [content, setContent] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [chatInput, setChatInput] = useState("");
 
-  // Mock functionality for toolbar to prevent default form submission behavior
   const handleToolbarAction = (e: React.MouseEvent, action: string) => {
     e.preventDefault();
     console.log(`Action triggered: ${action}`);
@@ -139,7 +148,7 @@ const Editor: React.FC = () => {
         </div>
       </div>
 
-      {/* Right Chat Sidebar - "Conversa" */}
+      {/* Right Chat Sidebar */}
       {isSidebarOpen && (
         <div className="w-[400px] border-l border-border bg-card/50 backdrop-blur-sm flex flex-col h-full animate-in slide-in-from-right-10 duration-300 shadow-xl z-10">
           {/* Sidebar Header */}
@@ -153,7 +162,7 @@ const Editor: React.FC = () => {
               <X size={18} />
             </Button>
             <span className="text-sm font-medium text-muted-foreground">Conversa</span>
-            <div className="w-8" /> {/* Spacer to center title */}
+            <div className="w-8" />
           </div>
 
           {/* Sidebar Content */}
