@@ -20,7 +20,13 @@ import {
   ThumbsUp,
   ArrowLeft,
   Eye,
-  PenLine
+  PenLine,
+  FileSearch,
+  FileText,
+  FileSpreadsheet,
+  FileChartPie,
+  File,
+  MessageCircle
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,19 +63,22 @@ const Editor: React.FC = () => {
   
   // Estados do Sidebar e Chat
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [sidebarView, setSidebarView] = useState<'chat' | 'sources'>('chat'); // Novo estado para controlar a visualização da sidebar
+
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [hasStartedChat, setHasStartedChat] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null); // Ref para o input de arquivo
 
   // Auto-scroll para a última mensagem
   useEffect(() => {
-    if (isSidebarOpen && hasStartedChat) {
+    if (isSidebarOpen && sidebarView === 'chat' && hasStartedChat) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isTyping, isSidebarOpen, hasStartedChat]);
+  }, [messages, isTyping, isSidebarOpen, hasStartedChat, sidebarView]);
 
   const handleToolbarAction = (e: React.MouseEvent, action: string) => {
     e.preventDefault();
@@ -102,7 +111,6 @@ const Editor: React.FC = () => {
     if (insertion) {
       newText = content.substring(0, start) + insertion + content.substring(end);
       setContent(newText);
-      // Opcional: Restaurar foco e posição do cursor (pode ser complexo com React state updates assíncronos)
     }
   };
 
@@ -144,6 +152,36 @@ const Editor: React.FC = () => {
     }
   };
 
+  // Função para abrir a sidebar de fontes
+  const openSources = () => {
+    setSidebarView('sources');
+    setIsSidebarOpen(true);
+  };
+
+  // Função para alternar o chat
+  const toggleChat = () => {
+    if (isSidebarOpen && sidebarView === 'chat') {
+      setIsSidebarOpen(false);
+    } else {
+      setSidebarView('chat');
+      setIsSidebarOpen(true);
+    }
+  };
+
+  // Handler para acionar o input de arquivo
+  const handleAddSourcesClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Handler (opcional) para quando um arquivo é selecionado
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      console.log("Arquivos selecionados:", files);
+      // Aqui você implementaria a lógica para processar os arquivos
+    }
+  };
+
   return (
     <div className="flex h-screen bg-background font-sans text-foreground overflow-hidden">
       
@@ -181,17 +219,37 @@ const Editor: React.FC = () => {
               <Trash2 size={16} />
             </Button>
             <Separator orientation="vertical" className="h-6 mx-2" />
-            <Button variant="ghost" size="sm" className="gap-2 h-9 px-3 text-xs font-medium">
-              <Type size={16} />
-              <span className="hidden sm:inline">Fontes</span>
-            </Button>
+            
+            {/* Botão Alternável: Fontes <-> Conversa */}
+            {sidebarView === 'sources' && isSidebarOpen ? (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="gap-2 h-9 px-3 text-xs font-medium bg-accent text-accent-foreground"
+                onClick={toggleChat}
+              >
+                <MessageCircle size={16} />
+                <span className="hidden sm:inline">Conversa</span>
+              </Button>
+            ) : (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={cn("gap-2 h-9 px-3 text-xs font-medium", sidebarView === 'sources' && isSidebarOpen && "bg-accent text-accent-foreground")}
+                onClick={openSources}
+              >
+                <FileSearch size={16} />
+                <span className="hidden sm:inline">Fontes</span>
+              </Button>
+            )}
+
             <Button 
               variant="ghost" 
               size="icon" 
-              className={cn("h-9 w-9 ml-2 transition-colors", isSidebarOpen && "bg-accent text-accent-foreground")}
-              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className={cn("h-9 w-9 ml-2 transition-colors", isSidebarOpen && sidebarView === 'chat' && "bg-accent text-accent-foreground")}
+              onClick={toggleChat}
             >
-              {isSidebarOpen ? <MoreHorizontal size={18} /> : <Bot size={18} />}
+              {isSidebarOpen && sidebarView === 'chat' ? <MoreHorizontal size={18} /> : <Bot size={18} />}
             </Button>
           </div>
         </header>
@@ -281,182 +339,250 @@ const Editor: React.FC = () => {
       {/* Right Chat Sidebar */}
       {isSidebarOpen && (
         <div className="w-[400px] border-l border-border bg-card/50 backdrop-blur-sm flex flex-col h-full animate-in slide-in-from-right-10 duration-300 shadow-xl z-10">
-          {/* Sidebar Header */}
-          <div className="flex items-center justify-between px-4 py-4 border-b border-border/40 bg-background/50">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => setIsSidebarOpen(false)}
-              className="text-muted-foreground hover:text-foreground h-8 w-8"
-            >
-              <X size={18} />
-            </Button>
-            <span className="text-sm font-medium text-muted-foreground">Conversa</span>
-            <div className="w-8" />
-          </div>
-
-          {/* Sidebar Content Area */}
-          <div className="flex-1 overflow-y-auto p-6 bg-background/30">
-            {!hasStartedChat ? (
-              // Estado Inicial (Onboarding)
-              <div className="space-y-6 animate-in fade-in duration-500">
-                <div>
-                  <h3 className="font-serif text-xl font-semibold mb-2">Sua página está pronta</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Esse é seu espaço para debate, rascunho e iteração. Estou aqui para ajudar ao longo do caminho.
-                  </p>
-                </div>
-
-                {/* Illustration Placeholder */}
-                <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border p-8 flex flex-col items-center justify-center text-center shadow-sm py-12">
-                  <div className="relative mb-4">
-                    <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium rounded">I think I can contribute</span>
-                    <div className="absolute -bottom-4 right-0 transform translate-y-1/2 translate-x-1/2">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-black dark:text-white drop-shadow-md">
-                        <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="currentColor" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Features List */}
-                <div className="space-y-4">
-                  <div className="flex gap-3 items-start">
-                    <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-foreground/40 shrink-0" />
-                    <div>
-                      <h4 className="text-sm font-semibold mb-1">Trabalhe em um espaço focado</h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Não é mais necessário colar em outro documento, podemos trabalhar juntos aqui mesmo.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 items-start">
-                    <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-foreground/40 shrink-0" />
-                    <div>
-                      <h4 className="text-sm font-semibold mb-1">Aqui quando você precisar</h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Faça perguntas ou obtenha comentários sobre seções específicas quando estiver com dificuldades.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 items-start">
-                    <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-foreground/40 shrink-0" />
-                    <div>
-                      <h4 className="text-sm font-semibold mb-1">Traga suas fontes</h4>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Carregue PDFs e documentos para me ajudar a entender seu tópico e fazer edições melhores.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              // Estado de Chat Ativo
-              <div className="space-y-6">
-                {messages.map((msg, idx) => (
-                  <div 
-                    key={idx} 
-                    className={cn(
-                      "flex animate-in slide-in-from-bottom-2 duration-300 w-full",
-                      msg.role === 'user' ? "justify-end" : "justify-start"
-                    )}
-                  >
-                    {/* Balão de Mensagem */}
-                    <div className={cn(
-                      "text-sm leading-relaxed group relative",
-                      msg.role === 'user' 
-                        ? "bg-peach-200 text-zinc-900 font-medium rounded-2xl px-4 py-2 shadow-sm max-w-[85%]" // ALTERADO: text-zinc-900 forçado
-                        : "w-full text-foreground px-1 text-justify" // Assistente justificado
-                    )}>
-                      {msg.role === 'ai' ? (
-                        <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-muted prose-pre:rounded-lg prose-a:text-orange-500 break-words">
-                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                            {msg.content}
-                          </ReactMarkdown>
-                        </div>
-                      ) : (
-                        <span className="whitespace-pre-wrap break-words">{msg.content}</span>
-                      )}
-
-                      {/* Ações da Mensagem (apenas para IA) */}
-                      {msg.role === 'ai' && (
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 mt-2 items-center">
-                          <button 
-                            className="p-1.5 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
-                            onClick={() => navigator.clipboard.writeText(msg.content)}
-                            title="Copiar"
-                          >
-                            <Copy size={14} />
-                          </button>
-                          <button 
-                            className="p-1.5 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
-                            title="Útil"
-                          >
-                            <ThumbsUp size={14} />
-                          </button>
-                          {/* Botão de Aplicar ao Editor */}
-                          <button
-                            className="flex items-center gap-1.5 px-2 py-1 ml-1 text-xs font-medium bg-peach-100 dark:bg-peach-900/30 text-orange-700 dark:text-orange-300 rounded-md hover:bg-peach-200 dark:hover:bg-peach-900/50 transition-colors"
-                            onClick={() => handleApplyToEditor(msg.content)}
-                            title="Substituir conteúdo do editor"
-                          >
-                            <ArrowLeft size={12} />
-                            Aplicar ao Editor
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                {isTyping && (
-                  <div className="flex items-center animate-in fade-in px-1">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
-                      <span className="text-xs">PsyMind está digitando...</span>
-                    </div>
-                  </div>
-                )}
-                
-                <div ref={messagesEndRef} className="h-1" />
-              </div>
-            )}
-          </div>
-
-          {/* Sidebar Footer (Input) */}
-          <div className="p-4 pt-2 bg-background/80 backdrop-blur-sm border-t border-border/40">
-            <div className="flex flex-col gap-2">
-              {!hasStartedChat && (
-                <div className="flex justify-center animate-out fade-out duration-200">
-                  <span className="text-[10px] text-muted-foreground/70">O PsyMind pode cometer erros.</span>
-                </div>
-              )}
-              <div className="relative flex items-center">
-                <Button variant="ghost" size="icon" className="absolute left-1 h-8 w-8 text-muted-foreground hover:text-foreground shrink-0">
-                  <Plus size={18} />
-                </Button>
-                <Input 
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Mensagem para o PsyMind" 
-                  disabled={isTyping}
-                  className="pl-10 pr-10 py-5 rounded-xl border-border/60 bg-background shadow-sm focus-visible:ring-1 focus-visible:ring-orange-200 transition-all"
-                />
+          
+          {/* VIEW: SOURCES */}
+          {sidebarView === 'sources' ? (
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-4 border-b border-border/40 bg-background/50">
                 <Button 
                   variant="ghost" 
                   size="icon" 
-                  className="absolute right-1 h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
-                  disabled={!chatInput.trim() || isTyping}
-                  onClick={handleSendMessage}
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="text-muted-foreground hover:text-foreground h-8 w-8"
                 >
-                  {isTyping ? <Loader2 size={16} className="animate-spin" /> : <CornerDownLeft size={16} />}
+                  <X size={18} />
+                </Button>
+                <span className="text-sm font-medium text-foreground">Fontes</span>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                  <Plus size={18} />
                 </Button>
               </div>
+
+              {/* Sources Content */}
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
+                {/* Illustration */}
+                <div className="bg-blue-100/80 dark:bg-blue-900/20 rounded-[2.5rem] p-10 mb-8 w-full aspect-square max-w-[280px] grid grid-cols-2 gap-4 place-items-center">
+                  <div className="bg-background p-4 rounded-2xl shadow-sm text-red-500 dark:text-red-400 flex items-center justify-center w-16 h-16">
+                    <FileText size={32} strokeWidth={1.5} />
+                  </div>
+                  <div className="bg-background p-4 rounded-2xl shadow-sm text-blue-500 dark:text-blue-400 flex items-center justify-center w-16 h-16">
+                    <File size={32} strokeWidth={1.5} />
+                  </div>
+                  <div className="bg-background p-4 rounded-2xl shadow-sm text-green-500 dark:text-green-400 flex items-center justify-center w-16 h-16">
+                    <FileSpreadsheet size={32} strokeWidth={1.5} />
+                  </div>
+                  <div className="bg-background p-4 rounded-2xl shadow-sm text-orange-500 dark:text-orange-400 flex items-center justify-center w-16 h-16">
+                    <FileChartPie size={32} strokeWidth={1.5} />
+                  </div>
+                </div>
+
+                <p className="text-sm text-muted-foreground mb-8 leading-relaxed max-w-[260px]">
+                  Carregue PDFs, documentos ou outros arquivos — usarei esses dados para fazer edições mais úteis.
+                </p>
+
+                {/* Hidden File Input */}
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  className="hidden" 
+                  onChange={handleFileChange}
+                  multiple
+                />
+
+                <Button 
+                  className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full px-8 py-6 font-medium hover:opacity-90 shadow-lg shadow-zinc-500/20 dark:shadow-none transition-all transform hover:-translate-y-0.5"
+                  onClick={handleAddSourcesClick}
+                >
+                  Adicionar fontes
+                </Button>
+
+                <p className="text-xs text-muted-foreground/60 mt-auto pt-12">
+                  Os anexos do chat não são exibidos aqui
+                </p>
+              </div>
             </div>
-          </div>
+          ) : (
+            /* VIEW: CHAT */
+            <div className="flex flex-col h-full">
+              {/* Sidebar Header */}
+              <div className="flex items-center justify-between px-4 py-4 border-b border-border/40 bg-background/50">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="text-muted-foreground hover:text-foreground h-8 w-8"
+                >
+                  <X size={18} />
+                </Button>
+                <span className="text-sm font-medium text-muted-foreground">Conversa</span>
+                <div className="w-8" />
+              </div>
+
+              {/* Sidebar Content Area */}
+              <div className="flex-1 overflow-y-auto p-6 bg-background/30">
+                {!hasStartedChat ? (
+                  // Estado Inicial (Onboarding)
+                  <div className="space-y-6 animate-in fade-in duration-500">
+                    <div>
+                      <h3 className="font-serif text-xl font-semibold mb-2">Sua página está pronta</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Esse é seu espaço para debate, rascunho e iteração. Estou aqui para ajudar ao longo do caminho.
+                      </p>
+                    </div>
+
+                    {/* Illustration Placeholder */}
+                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border p-8 flex flex-col items-center justify-center text-center shadow-sm py-12">
+                      <div className="relative mb-4">
+                        <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium rounded">I think I can contribute</span>
+                        <div className="absolute -bottom-4 right-0 transform translate-y-1/2 translate-x-1/2">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-black dark:text-white drop-shadow-md">
+                            <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="currentColor" stroke="white" strokeWidth="2" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Features List */}
+                    <div className="space-y-4">
+                      <div className="flex gap-3 items-start">
+                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-foreground/40 shrink-0" />
+                        <div>
+                          <h4 className="text-sm font-semibold mb-1">Trabalhe em um espaço focado</h4>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            Não é mais necessário colar em outro documento, podemos trabalhar juntos aqui mesmo.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 items-start">
+                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-foreground/40 shrink-0" />
+                        <div>
+                          <h4 className="text-sm font-semibold mb-1">Aqui quando você precisar</h4>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            Faça perguntas ou obtenha comentários sobre seções específicas quando estiver com dificuldades.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3 items-start">
+                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-foreground/40 shrink-0" />
+                        <div>
+                          <h4 className="text-sm font-semibold mb-1">Traga suas fontes</h4>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            Carregue PDFs e documentos para me ajudar a entender seu tópico e fazer edições melhores.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  // Estado de Chat Ativo
+                  <div className="space-y-6">
+                    {messages.map((msg, idx) => (
+                      <div 
+                        key={idx} 
+                        className={cn(
+                          "flex animate-in slide-in-from-bottom-2 duration-300 w-full",
+                          msg.role === 'user' ? "justify-end" : "justify-start"
+                        )}
+                      >
+                        {/* Balão de Mensagem */}
+                        <div className={cn(
+                          "text-sm leading-relaxed group relative",
+                          msg.role === 'user' 
+                            ? "bg-peach-200 text-zinc-900 font-medium rounded-2xl px-4 py-2 shadow-sm max-w-[85%]" 
+                            : "w-full text-foreground px-1 text-justify" 
+                        )}>
+                          {msg.role === 'ai' ? (
+                            <div className="prose prose-sm prose-zinc dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-muted prose-pre:rounded-lg prose-a:text-orange-500 break-words">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {msg.content}
+                              </ReactMarkdown>
+                            </div>
+                          ) : (
+                            <span className="whitespace-pre-wrap break-words">{msg.content}</span>
+                          )}
+
+                          {/* Ações da Mensagem (apenas para IA) */}
+                          {msg.role === 'ai' && (
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 mt-2 items-center">
+                              <button 
+                                className="p-1.5 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
+                                onClick={() => navigator.clipboard.writeText(msg.content)}
+                                title="Copiar"
+                              >
+                                <Copy size={14} />
+                              </button>
+                              <button 
+                                className="p-1.5 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
+                                title="Útil"
+                              >
+                                <ThumbsUp size={14} />
+                              </button>
+                              {/* Botão de Aplicar ao Editor */}
+                              <button
+                                className="flex items-center gap-1.5 px-2 py-1 ml-1 text-xs font-medium bg-peach-100 dark:bg-peach-900/30 text-orange-700 dark:text-orange-300 rounded-md hover:bg-peach-200 dark:hover:bg-peach-900/50 transition-colors"
+                                onClick={() => handleApplyToEditor(msg.content)}
+                                title="Substituir conteúdo do editor"
+                              >
+                                <ArrowLeft size={12} />
+                                Aplicar ao Editor
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+
+                    {isTyping && (
+                      <div className="flex items-center animate-in fade-in px-1">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
+                          <span className="text-xs">PsyMind está digitando...</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div ref={messagesEndRef} className="h-1" />
+                  </div>
+                )}
+              </div>
+
+              {/* Sidebar Footer (Input) */}
+              <div className="p-4 pt-2 bg-background/80 backdrop-blur-sm border-t border-border/40">
+                <div className="flex flex-col gap-2">
+                  {!hasStartedChat && (
+                    <div className="flex justify-center animate-out fade-out duration-200">
+                      <span className="text-[10px] text-muted-foreground/70">O PsyMind pode cometer erros.</span>
+                    </div>
+                  )}
+                  <div className="relative flex items-center">
+                    <Button variant="ghost" size="icon" className="absolute left-1 h-8 w-8 text-muted-foreground hover:text-foreground shrink-0">
+                      <Plus size={18} />
+                    </Button>
+                    <Input 
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Mensagem para o PsyMind" 
+                      disabled={isTyping}
+                      className="pl-10 pr-10 py-5 rounded-xl border-border/60 bg-background shadow-sm focus-visible:ring-1 focus-visible:ring-orange-200 transition-all"
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="absolute right-1 h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+                      disabled={!chatInput.trim() || isTyping}
+                      onClick={handleSendMessage}
+                    >
+                      {isTyping ? <Loader2 size={16} className="animate-spin" /> : <CornerDownLeft size={16} />}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
