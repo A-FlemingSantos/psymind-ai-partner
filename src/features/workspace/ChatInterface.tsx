@@ -2,14 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowUp, 
   Paperclip, 
-  Image as ImageIcon, 
   X, 
   MoreHorizontal, 
   Copy, 
   ThumbsUp, 
   RotateCcw, 
   Loader2,
-  Check
+  Check,
+  FileText,
+  File,
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/shared/utils/utils';
 import ReactMarkdown from 'react-markdown';
@@ -24,6 +26,15 @@ interface ChatInterfaceProps {
   mode: 'Advisor' | 'Planner';
   personality: string;
   onClose: () => void;
+}
+
+interface AttachedFile {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  file: File;
+  previewUrl?: string;
 }
 
 // Componente para blocos de código com botão de copiar
@@ -95,8 +106,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Ref para garantir que a criação inicial só aconteça uma vez
   const initialized = useRef(false);
@@ -179,31 +192,102 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   }, [input]);
 
+  // Limpar preview URLs ao desmontar
+  useEffect(() => {
+    return () => {
+      attachedFiles.forEach(file => {
+        if (file.previewUrl) {
+          URL.revokeObjectURL(file.previewUrl);
+        }
+      });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      const newFiles: AttachedFile[] = Array.from(files).map(file => ({
+        id: Math.random().toString(36).substring(2, 9),
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        size: file.size,
+        file,
+        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
+      }));
+      
+      setAttachedFiles(prev => [...prev, ...newFiles]);
+      event.target.value = '';
+    }
+  };
+
+  const handleRemoveFile = (id: string) => {
+    setAttachedFiles(prev => {
+      const file = prev.find(f => f.id === id);
+      if (file?.previewUrl) {
+        URL.revokeObjectURL(file.previewUrl);
+      }
+      return prev.filter(f => f.id !== id);
+    });
+  };
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  };
+
+  const getFileIcon = (type: string) => {
+    if (type.startsWith('image/')) return <FileText size={14} />;
+    if (type === 'application/pdf') return <FileText size={14} />;
+    if (type.startsWith('text/')) return <FileText size={14} />;
+    return <File size={14} />;
+  };
+
   const handleSendMessage = () => {
-    if (!input.trim()) return;
+    if (!input.trim() && attachedFiles.length === 0) return;
 
     // Se por acaso não houver ID (erro de estado), cria agora
     let chatId = currentConversationId;
     if (!chatId) {
-      chatId = createConversation(input);
+      chatId = createConversation(input || `Anexo: ${attachedFiles.map(f => f.name).join(', ')}`);
+    }
+
+    // Prepara conteúdo da mensagem incluindo referência aos arquivos
+    let messageContent = input;
+    if (attachedFiles.length > 0) {
+      const fileNames = attachedFiles.map(f => f.name).join(', ');
+      messageContent = messageContent 
+        ? `${messageContent}\n\n[Anexos: ${fileNames}]`
+        : `[Anexos: ${fileNames}]`;
     }
 
     const newUserMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input,
+      content: messageContent,
       timestamp: new Date()
     };
 
     // Atualiza estado global
     addMessage(chatId, newUserMessage);
     setInput('');
+    setAttachedFiles([]);
+    
+    // Limpa preview URLs
+    attachedFiles.forEach(file => {
+      if (file.previewUrl) {
+        URL.revokeObjectURL(file.previewUrl);
+      }
+    });
     
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
     
     // Dispara IA com o histórico atualizado (incluindo a nova mensagem)
     const updatedHistory = [...messages, newUserMessage];
-    handleGeminiResponse(chatId, updatedHistory, input);
+    handleGeminiResponse(chatId, updatedHistory, messageContent);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -359,30 +443,81 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       {/* Área de Input */}
       <div className="flex-none p-6 bg-gradient-to-t from-[#FFFBF7] via-[#FFFBF7] to-transparent">
         <div className="max-w-3xl mx-auto">
+          {/* Arquivos Anexados */}
+          {attachedFiles.length > 0 && (
+            <div className="mb-3 flex flex-wrap gap-2 animate-fade-in">
+              {attachedFiles.map((file) => (
+                <div
+                  key={file.id}
+                  className="group flex items-center gap-2 bg-white border border-orange-200 rounded-xl px-3 py-2 shadow-sm hover:shadow-md transition-all"
+                >
+                  {file.previewUrl ? (
+                    <img
+                      src={file.previewUrl}
+                      alt={file.name}
+                      className="w-8 h-8 object-cover rounded"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-orange-100 rounded flex items-center justify-center text-orange-600">
+                      {getFileIcon(file.type)}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-black-soft truncate max-w-[150px]">
+                      {file.name}
+                    </p>
+                    <p className="text-xs text-zinc-400">
+                      {formatFileSize(file.size)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveFile(file.id)}
+                    className="p-1 hover:bg-red-50 rounded-full text-zinc-400 hover:text-red-500 transition-colors"
+                    title="Remover arquivo"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="relative bg-white rounded-[2rem] shadow-xl shadow-orange-900/5 border border-orange-100 focus-within:ring-2 focus-within:ring-orange-100 focus-within:border-orange-300 transition-all duration-300">
             <textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Continue a conversa..."
+              placeholder={attachedFiles.length > 0 ? "Adicione uma mensagem (opcional)..." : "Continue a conversa..."}
               rows={1}
               disabled={isTyping}
-              className="w-full py-4 pl-6 pr-32 bg-transparent border-none resize-none focus:outline-none text-black-soft placeholder:text-zinc-300 text-lg leading-relaxed max-h-40 rounded-[2rem] disabled:opacity-50 font-sans"
+              className="w-full py-4 pl-6 pr-28 bg-transparent border-none resize-none focus:outline-none text-black-soft placeholder:text-zinc-300 text-lg leading-relaxed max-h-40 rounded-[2rem] disabled:opacity-50 font-sans"
               style={{ minHeight: '60px' }}
             />
             
-            <div className="absolute bottom-2 right-2 flex items-center gap-1">
-              <button className="p-2.5 text-zinc-400 hover:text-orange-500 hover:bg-orange-50 rounded-full transition-colors" title="Anexar arquivo">
+            {/* Input de arquivo oculto */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={handleFileSelect}
+              accept=".pdf,.txt,.md,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.mp3,.wav,.mp4,.mov"
+            />
+            
+            <div className="absolute top-1/2 -translate-y-1/2 right-2 flex items-center gap-1">
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2.5 text-zinc-400 hover:text-orange-500 hover:bg-orange-50 rounded-full transition-colors hover-lift"
+                title="Anexar arquivo"
+                disabled={isTyping}
+              >
                 <Paperclip size={18} />
-              </button>
-              <button className="p-2.5 text-zinc-400 hover:text-orange-500 hover:bg-orange-50 rounded-full transition-colors" title="Anexar imagem">
-                <ImageIcon size={18} />
               </button>
               <button 
                 onClick={handleSendMessage}
-                disabled={!input.trim() || isTyping}
-                className="p-2.5 bg-black-soft text-orange-50 rounded-xl hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:hover:bg-black-soft ml-1"
+                disabled={(!input.trim() && attachedFiles.length === 0) || isTyping}
+                className="p-2.5 bg-black-soft text-orange-50 rounded-xl hover:bg-zinc-800 transition-colors disabled:opacity-50 disabled:hover:bg-black-soft disabled:cursor-not-allowed ml-1 hover-lift"
                 title="Enviar mensagem"
               >
                 <ArrowUp size={18} />
