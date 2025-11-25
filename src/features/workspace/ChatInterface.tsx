@@ -11,7 +11,11 @@ import {
   Check,
   FileText,
   File,
-  Trash2
+  Trash2,
+  Volume2,
+  VolumeX,
+  Pause,
+  Play
 } from 'lucide-react';
 import { cn } from '@/shared/utils/utils';
 import ReactMarkdown from 'react-markdown';
@@ -107,9 +111,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [currentSpeakingMessageId, setCurrentSpeakingMessageId] = useState<string | null>(null);
+  const [autoReadEnabled, setAutoReadEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
   
   // Ref para garantir que a criação inicial só aconteça uma vez
   const initialized = useRef(false);
@@ -297,6 +306,153 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  // Função para extrair texto puro do markdown
+  const extractTextFromMarkdown = (markdown: string): string => {
+    // Remove blocos de código
+    let text = markdown.replace(/```[\s\S]*?```/g, '');
+    // Remove código inline
+    text = text.replace(/`[^`]+`/g, '');
+    // Remove links [text](url) -> text
+    text = text.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+    // Remove imagens ![alt](url)
+    text = text.replace(/!\[([^\]]*)\]\([^\)]+\)/g, '');
+    // Remove headers (# ## ###)
+    text = text.replace(/^#{1,6}\s+/gm, '');
+    // Remove bold/italic
+    text = text.replace(/\*\*([^\*]+)\*\*/g, '$1');
+    text = text.replace(/\*([^\*]+)\*/g, '$1');
+    // Remove list markers
+    text = text.replace(/^[\s]*[-*+]\s+/gm, '');
+    text = text.replace(/^[\s]*\d+\.\s+/gm, '');
+    // Remove múltiplas quebras de linha
+    text = text.replace(/\n{3,}/g, '\n\n');
+    // Remove espaços extras
+    text = text.trim();
+    return text;
+  };
+
+  // Função para ler uma mensagem
+  const speakMessage = (messageId: string, content: string) => {
+    // Para qualquer leitura anterior
+    stopSpeaking();
+
+    const text = extractTextFromMarkdown(content);
+    if (!text || text.length === 0) return;
+
+    // Verifica se o navegador suporta speechSynthesis
+    if (!('speechSynthesis' in window)) {
+      console.warn('Seu navegador não suporta síntese de voz');
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'pt-BR';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setIsPaused(false);
+      setCurrentSpeakingMessageId(messageId);
+    };
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setIsPaused(false);
+      setCurrentSpeakingMessageId(null);
+      speechSynthesisRef.current = null;
+    };
+
+    utterance.onerror = (error) => {
+      console.error('Erro na síntese de voz:', error);
+      setIsSpeaking(false);
+      setIsPaused(false);
+      setCurrentSpeakingMessageId(null);
+      speechSynthesisRef.current = null;
+    };
+
+    speechSynthesisRef.current = utterance;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Função para pausar/retomar leitura
+  const togglePauseSpeaking = () => {
+    if (!window.speechSynthesis) return;
+
+    if (isPaused) {
+      window.speechSynthesis.resume();
+      setIsPaused(false);
+    } else {
+      window.speechSynthesis.pause();
+      setIsPaused(true);
+    }
+  };
+
+  // Função para parar leitura
+  const stopSpeaking = () => {
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+    setIsSpeaking(false);
+    setIsPaused(false);
+    setCurrentSpeakingMessageId(null);
+    speechSynthesisRef.current = null;
+  };
+
+  // Efeito para leitura automática de novas mensagens da IA
+  useEffect(() => {
+    if (autoReadEnabled && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      if (lastMessage.role === 'ai' && !isTyping && !isSpeaking) {
+        // Pequeno delay para garantir que a mensagem foi renderizada
+        const timer = setTimeout(() => {
+          const text = extractTextFromMarkdown(lastMessage.content);
+          if (text && text.length > 0 && 'speechSynthesis' in window) {
+            stopSpeaking();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'pt-BR';
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            utterance.volume = 1.0;
+
+            utterance.onstart = () => {
+              setIsSpeaking(true);
+              setIsPaused(false);
+              setCurrentSpeakingMessageId(lastMessage.id);
+            };
+
+            utterance.onend = () => {
+              setIsSpeaking(false);
+              setIsPaused(false);
+              setCurrentSpeakingMessageId(null);
+              speechSynthesisRef.current = null;
+            };
+
+            utterance.onerror = () => {
+              setIsSpeaking(false);
+              setIsPaused(false);
+              setCurrentSpeakingMessageId(null);
+              speechSynthesisRef.current = null;
+            };
+
+            speechSynthesisRef.current = utterance;
+            window.speechSynthesis.speak(utterance);
+          }
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, autoReadEnabled, isTyping, isSpeaking]);
+
+  // Limpa síntese de voz ao desmontar
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+    };
+  }, []);
+
   // Título dinâmico baseado na conversa ou prompt
   const chatTitle = currentConversation?.title || initialPrompt.split(' ').slice(0, 5).join(' ') + '...';
 
@@ -334,6 +490,37 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Controles de áudio globais */}
+          {isSpeaking && (
+            <>
+              <button
+                onClick={togglePauseSpeaking}
+                className="p-2 hover:bg-orange-50 rounded-full text-orange-500 hover:text-orange-600 transition-colors"
+                title={isPaused ? "Retomar leitura" : "Pausar leitura"}
+              >
+                {isPaused ? <Play size={18} /> : <Pause size={18} />}
+              </button>
+              <button
+                onClick={stopSpeaking}
+                className="p-2 hover:bg-orange-50 rounded-full text-orange-500 hover:text-orange-600 transition-colors"
+                title="Parar leitura"
+              >
+                <VolumeX size={18} />
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => setAutoReadEnabled(!autoReadEnabled)}
+            className={cn(
+              "p-2 rounded-full transition-colors",
+              autoReadEnabled
+                ? "bg-orange-100 text-orange-600 hover:bg-orange-200"
+                : "hover:bg-orange-50 text-zinc-400 hover:text-zinc-600"
+            )}
+            title={autoReadEnabled ? "Desativar leitura automática" : "Ativar leitura automática"}
+          >
+            <Volume2 size={18} />
+          </button>
           <button className="p-2 hover:bg-orange-50 rounded-full text-zinc-400 hover:text-zinc-600 transition-colors" title="Reiniciar conversa">
             <RotateCcw size={18} />
           </button>
@@ -410,16 +597,44 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       : "mt-2 opacity-0 group-hover:opacity-100"
                   )}>
                     <button 
-                      className="p-1 hover:bg-black/5 rounded text-zinc-400" 
+                      className="p-1 hover:bg-black/5 rounded text-zinc-400 hover:text-zinc-600 transition-colors" 
                       title="Copiar"
                       onClick={() => navigator.clipboard.writeText(msg.content)}
                     >
                       <Copy size={14} />
                     </button>
                     {msg.role === 'ai' && (
-                      <button className="p-1 hover:bg-black/5 rounded text-zinc-400" title="Gostei">
-                        <ThumbsUp size={14} />
-                      </button>
+                      <>
+                        {currentSpeakingMessageId === msg.id ? (
+                          <>
+                            <button
+                              onClick={togglePauseSpeaking}
+                              className="p-1 hover:bg-black/5 rounded text-orange-500 hover:text-orange-600 transition-colors"
+                              title={isPaused ? "Retomar leitura" : "Pausar leitura"}
+                            >
+                              {isPaused ? <Play size={14} /> : <Pause size={14} />}
+                            </button>
+                            <button
+                              onClick={stopSpeaking}
+                              className="p-1 hover:bg-black/5 rounded text-orange-500 hover:text-orange-600 transition-colors"
+                              title="Parar leitura"
+                            >
+                              <VolumeX size={14} />
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => speakMessage(msg.id, msg.content)}
+                            className="p-1 hover:bg-black/5 rounded text-zinc-400 hover:text-orange-500 transition-colors"
+                            title="Escutar mensagem"
+                          >
+                            <Volume2 size={14} />
+                          </button>
+                        )}
+                        <button className="p-1 hover:bg-black/5 rounded text-zinc-400 hover:text-zinc-600 transition-colors" title="Gostei">
+                          <ThumbsUp size={14} />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
