@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { Languages, Loader2, Copy, Check, ArrowUpDown } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
+import { translateText } from '@/shared/services/toolsService';
 
 const languages = [
   { code: 'pt', name: 'Português', flag: '🇧🇷' },
@@ -28,7 +29,7 @@ const AITranslator: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
-  const translateText = async () => {
+  const handleTranslate = async () => {
     if (!inputText.trim()) {
       toast({
         title: "Erro",
@@ -49,20 +50,14 @@ const AITranslator: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // Simulação de API de IA - substitua pela sua implementação real
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const fromLang = languages.find(l => l.code === fromLanguage);
-      const toLang = languages.find(l => l.code === toLanguage);
-      
-      const mockTranslation = `[Tradução de ${fromLang?.name} para ${toLang?.name}]\n\n${inputText}\n\n→ Esta é uma tradução inteligente gerada por IA, considerando contexto, nuances culturais e expressões idiomáticas para fornecer a melhor tradução possível.`;
-      
-      setTranslatedText(mockTranslation);
+      const translation = await translateText(inputText, fromLanguage, toLanguage);
+      setTranslatedText(translation);
       toast({
         title: "Sucesso",
         description: "Texto traduzido com sucesso!",
       });
     } catch (error) {
+      console.error("Erro ao traduzir:", error);
       toast({
         title: "Erro",
         description: "Erro ao traduzir texto. Tente novamente.",
@@ -184,7 +179,7 @@ const AITranslator: React.FC = () => {
               {inputText.length} caracteres
             </span>
             <Button 
-              onClick={translateText} 
+              onClick={handleTranslate} 
               disabled={isLoading || !inputText.trim()}
               className="bg-purple-600 hover:bg-purple-700"
             >

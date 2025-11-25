@@ -1,13 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { GraduationCap, Calculator, BookOpen, Target, ArrowLeft, School, Languages, History, Globe, Zap, Beaker, Dna, PenTool, Mic, Headphones, Palette, Users, Code, Telescope, Trophy, Calendar, Clock, BarChart3, FileText, Timer, TrendingUp, Award, CheckCircle } from 'lucide-react';
-import { generateExamStrategy, generateStudyPlan, explainTopic, generatePracticeQuestions, generateStudySchedule, generateMockExam, analyzePerformance } from '@/shared/services';
+import { 
+  generateExamStrategy, 
+  generateStudyPlan, 
+  explainTopic, 
+  generatePracticeQuestions, 
+  generateStudySchedule, 
+  generateMockExam, 
+  analyzePerformance,
+  generateBibliography,
+  generateMotivationalCoach,
+  generateQuickQuestions,
+  generateEssayQuestions,
+  generateChallengeQuestions,
+  generateFeynmanMethod,
+  generateSpacedRepetition,
+  generateMindMaps,
+  generatePersonalizedPomodoro,
+  generateAssociationTechnique,
+  generateStrategicSummaries,
+  generateMemorizationTechniques,
+  analyzeSisuProuniFeasibility
+} from '@/shared/services';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { Progress } from '@/shared/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
-import { sendMessage } from '@/shared/services/chatService';
+import { useToast } from '@/shared/hooks/use-toast';
+import { Loader2, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { sendMessageToGemini } from '@/shared/utils/gemini';
 
 const ExamPrep: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -18,6 +44,43 @@ const ExamPrep: React.FC = () => {
   const [studyProgress, setStudyProgress] = useState<{[key: string]: number}>({});
   const [examDate, setExamDate] = useState('');
   const [studyHoursPerDay, setStudyHoursPerDay] = useState('4');
+  const [isGeneratingQuickMock, setIsGeneratingQuickMock] = useState(false);
+  const [isGeneratingFullMock, setIsGeneratingFullMock] = useState(false);
+  const { toast } = useToast();
+  
+  // Estados para o modal de resposta da IA
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalContent, setModalContent] = useState('');
+  const [isLoadingResponse, setIsLoadingResponse] = useState(false);
+
+  // Função auxiliar para enviar mensagem e abrir modal
+  const sendMessageAndShowModal = async (prompt: string, title?: string) => {
+    setIsLoadingResponse(true);
+    setIsModalOpen(true);
+    setModalTitle(title || 'Resposta da IA');
+    setModalContent('');
+
+    try {
+      // Chama a IA
+      const history = [{
+        role: 'user' as const,
+        content: prompt
+      }];
+      
+      const aiResponse = await sendMessageToGemini(history, prompt, 'Advisor', 'empático e acolhedor');
+      
+      setModalContent(aiResponse);
+      return { success: true, response: aiResponse };
+    } catch (error) {
+      console.error('Erro ao enviar mensagem:', error);
+      const errorMessage = `⚠️ **Erro ao processar solicitação**\n\n${error instanceof Error ? error.message : 'Erro desconhecido'}\n\nPor favor, tente novamente.`;
+      setModalContent(errorMessage);
+      return { success: false, error };
+    } finally {
+      setIsLoadingResponse(false);
+    }
+  };
 
 
   useEffect(() => {
@@ -266,45 +329,13 @@ const ExamPrep: React.FC = () => {
     setResult(avg);
 
     if (desiredCourse) {
-      const prompt = `🎓 ANÁLISE DE VIABILIDADE SISU/PROUNI
-
-📊 MINHAS NOTAS DO ENEM:
-• Linguagens: ${scores.linguagens}
-• Ciências Humanas: ${scores.humanas}
-• Ciências da Natureza: ${scores.natureza}
-• Matemática: ${scores.matematica}
-• Redação: ${scores.redacao}
-
-📈 Média Simples: ${avg.toFixed(2)}
-
-🎯 OBJETIVO:
-• Curso: ${desiredCourse}
-• Modalidade: ${category}
-
-Por favor, me ajude com:
-
-1. 🏛️ UNIVERSIDADES VIÁVEIS
-   - Liste universidades federais/estaduais onde tenho BOA chance
-   - Mencione as notas de corte recentes (2023/2024)
-
-2. ⚠️ OPÇÕES ARRISCADAS
-   - Universidades onde seria mais difícil, mas possível
-
-3. ⚖️ SISTEMA DE PESOS
-   - Como ${desiredCourse} costuma pesar as áreas?
-   - Qual minha nota ponderada estimada?
-
-4. 💡 ESTRATÉGIAS
-   - Devo focar em melhorar alguma área específica?
-   - Dicas para escolha de cursos no SiSU
-
-5. 🧠 APOIO EMOCIONAL
-   - Como lidar com a ansiedade da espera?
-   - Mensagem motivacional personalizada
-
-Seja realista mas encorajador! 💪`;
-      
-      await sendMessage(prompt, []);
+      try {
+        const analysis = await analyzeSisuProuniFeasibility(scores, desiredCourse, category);
+        const prompt = `🎓 ANÁLISE DE VIABILIDADE SISU/PROUNI\n\n${analysis}`;
+        await sendMessageAndShowModal(prompt, `Análise SiSU/ProUni`);
+      } catch (error) {
+        console.error('Erro ao analisar viabilidade:', error);
+      }
     }
   };
 
@@ -631,7 +662,7 @@ ${plan}
 - Faça pausas regulares
 - Pratique questões anteriores
 - Acredite no seu potencial!`;
-                    await sendMessage(prompt, []);
+                    await sendMessageAndShowModal(prompt, `Plano de Estudos - ${selectedExam.name}`);
                   } catch (error) {
                     console.error('Erro ao gerar plano de estudos:', error);
                   }
@@ -661,7 +692,7 @@ ${strategy}
 📝 Dicas de gestão de tempo durante o exame
 
 Dê conselhos práticos e motivadores!`;
-                    await sendMessage(prompt, []);
+                    await sendMessageAndShowModal(prompt, `Plano de Estudos - ${selectedExam.name}`);
                   } catch (error) {
                     console.error('Erro ao gerar estratégia:', error);
                   }
@@ -676,35 +707,8 @@ Dê conselhos práticos e motivadores!`;
                 variant="outline"
                 onClick={async () => {
                   try {
-                    const prompt = `📚 BIBLIOGRAFIA ESSENCIAL - ${selectedSubject}
-
-🎯 Vestibular: ${selectedExam.name}
-📝 Matéria: ${selectedSubject}
-
-Recomende:
-
-📚 LIVROS PRINCIPAIS (3-5 títulos)
-- Autor, título e por que é essencial
-- Qual parte focar para ${selectedExam.name}
-
-📱 RECURSOS DIGITAIS
-- Apps recomendados
-- Canais do YouTube
-- Sites especializados
-- Plataformas online
-
-📝 MATERIAIS COMPLEMENTARES
-- Apostilas específicas
-- Resumos e mapas mentais
-- Bancos de questões
-
-📊 COMO USAR CADA RECURSO
-- Ordem de estudo
-- Tempo dedicado a cada um
-- Dicas de aproveitamento
-
-💡 Foque nos recursos mais eficientes para ${selectedExam.name}!`;
-                    await sendMessage(prompt, []);
+                    const bibliography = await generateBibliography(selectedExam.name, selectedSubject);
+                    await sendMessageAndShowModal(bibliography, `Bibliografia - ${selectedSubject}`);
                   } catch (error) {
                     console.error('Erro ao gerar bibliografia:', error);
                   }
@@ -719,35 +723,8 @@ Recomende:
                 variant="outline"
                 onClick={async () => {
                   try {
-                    const prompt = `🧠 COACH MOTIVACIONAL - ${selectedSubject}
-
-🎯 Vestibular: ${selectedExam.name}
-📚 Matéria: ${selectedSubject}
-
-Como seu coach pessoal, vou te ajudar com:
-
-💪 MOTIVAÇÃO DIÁRIA
-- Frases inspiradoras personalizadas
-- Lembretes do seu objetivo
-- Celebração de pequenas vitórias
-
-🧘 GESTÃO DE ANSIEDADE
-- Técnicas de respiração
-- Exercícios de relaxamento
-- Mindfulness para estudos
-
-🎯 FOCO E DISCIPLINA
-- Como manter consistência
-- Superar procrastinação
-- Criar hábitos de estudo
-
-🚀 MENTALIDADE VENCEDORA
-- Visualização do sucesso
-- Autoconfiança
-- Resiliência nos estudos
-
-🏆 Você TEM potencial! Vamos desbloqueá-lo juntos!`;
-                    await sendMessage(prompt, []);
+                    const coaching = await generateMotivationalCoach(selectedExam.name, selectedSubject);
+                    await sendMessageAndShowModal(coaching, `Coach Motivacional - ${selectedSubject}`);
                   } catch (error) {
                     console.error('Erro ao gerar coaching:', error);
                   }
@@ -781,7 +758,7 @@ Como seu coach pessoal, vou te ajudar com:
 ${explanation}
 
 💡 Continue estudando! Cada conceito dominado te aproxima do seu objetivo.`;
-                            await sendMessage(prompt, []);
+                            await sendMessageAndShowModal(prompt, `Plano de Estudos - ${selectedExam.name}`);
                           }}
                         >
                           <BookOpen size={14} />
@@ -798,7 +775,7 @@ ${explanation}
 ${questions}
 
 🚀 Pratique regularmente! A repetição é a chave do sucesso.`;
-                            await sendMessage(prompt, []);
+                            await sendMessageAndShowModal(prompt, `Plano de Estudos - ${selectedExam.name}`);
                           }}
                         >
                           <Target size={14} />
@@ -882,7 +859,7 @@ ${schedule}
 - Ajuste conforme necessário
 
 💪 Você consegue! Disciplina é a chave do sucesso!`;
-                  await sendMessage(prompt, []);
+                  await sendMessageAndShowModal(prompt, `Cronograma - ${selectedExam.name}`);
                 } catch (error) {
                   console.error('Erro ao gerar cronograma:', error);
                 }
@@ -901,18 +878,8 @@ ${schedule}
                 className="h-24 flex flex-col items-center gap-2"
                 onClick={async () => {
                   try {
-                    const prompt = `🎯 QUESTÕES RÁPIDAS - ${selectedExam.name}
-
-📚 Matéria: ${selectedSubject}
-
-Gere 5 questões de múltipla escolha (nível fácil-médio) com:
-- Enunciado claro
-- 5 alternativas (A-E)
-- Gabarito comentado
-- Tempo estimado: 2min/questão
-
-Foque nos tópicos mais cobrados! 🚀`;
-                    await sendMessage(prompt, []);
+                    const questions = await generateQuickQuestions(selectedExam.name, selectedSubject);
+                    await sendMessageAndShowModal(questions, `Questões - ${selectedSubject}`);
                   } catch (error) {
                     console.error('Erro ao gerar questões rápidas:', error);
                   }
@@ -927,18 +894,8 @@ Foque nos tópicos mais cobrados! 🚀`;
                 className="h-24 flex flex-col items-center gap-2"
                 onClick={async () => {
                   try {
-                    const prompt = `📝 QUESTÕES DISSERTATIVAS - ${selectedExam.name}
-
-📚 Matéria: ${selectedSubject}
-
-Crie 3 questões dissertativas com:
-- Enunciado contextualizado
-- Critérios de correção
-- Resposta modelo
-- Dicas de estruturação
-
-Estilo ${selectedExam.name}! ✍️`;
-                    await sendMessage(prompt, []);
+                    const questions = await generateEssayQuestions(selectedExam.name, selectedSubject);
+                    await sendMessageAndShowModal(questions, `Questões - ${selectedSubject}`);
                   } catch (error) {
                     console.error('Erro ao gerar questões dissertativas:', error);
                   }
@@ -953,18 +910,8 @@ Estilo ${selectedExam.name}! ✍️`;
                 className="h-24 flex flex-col items-center gap-2"
                 onClick={async () => {
                   try {
-                    const prompt = `🔥 QUESTÕES DESAFIO - ${selectedExam.name}
-
-📚 Matéria: ${selectedSubject}
-
-Crie 3 questões de nível avançado:
-- Interdisciplinares
-- Raciocínio complexo
-- Resolução detalhada
-- Dicas de abordagem
-
-Para quem quer se destacar! 🏆`;
-                    await sendMessage(prompt, []);
+                    const questions = await generateChallengeQuestions(selectedExam.name, selectedSubject);
+                    await sendMessageAndShowModal(questions, `Questões - ${selectedSubject}`);
                   } catch (error) {
                     console.error('Erro ao gerar questões desafio:', error);
                   }
@@ -985,10 +932,19 @@ Para quem quer se destacar! 🏆`;
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Button
                 className="h-20 flex flex-col items-center gap-2"
+                disabled={isGeneratingQuickMock || isGeneratingFullMock}
                 onClick={async () => {
+                  setIsGeneratingQuickMock(true);
                   try {
+                    toast({
+                      title: "Gerando simulado...",
+                      description: "Isso pode levar alguns instantes. Por favor, aguarde.",
+                    });
+                    
                     const mockExam = await generateMockExam(selectedExam.name, selectedSubject, 'quick');
-                    const prompt = `⚡ SIMULADO RÁPIDO - ${selectedExam.name}
+                    
+                    if (mockExam && !mockExam.includes('⚠️ Erro') && mockExam.length > 50) {
+                      const prompt = `⚡ SIMULADO RÁPIDO - ${selectedExam.name}
 
 📚 ${selectedSubject} | ⏱️ 30 minutos
 
@@ -1001,23 +957,75 @@ ${mockExam}
 - Compare com o gabarito
 
 💪 Boa sorte! Trate como prova real!`;
-                    await sendMessage(prompt, []);
+                      
+                      const response = await sendMessageAndShowModal(prompt, `Simulado - ${selectedExam.name}`);
+                      
+                      if (response.success) {
+                        toast({
+                          title: "Simulado gerado!",
+                          description: "O simulado foi enviado para o chat. Abra o chat para visualizar.",
+                        });
+                      } else {
+                        toast({
+                          title: "Erro ao enviar",
+                          description: "O simulado foi gerado, mas houve um erro ao enviar para o chat.",
+                          variant: "destructive",
+                        });
+                      }
+                    } else {
+                      toast({
+                        title: "Erro ao gerar simulado",
+                        description: mockExam || "Não foi possível gerar o simulado. Tente novamente.",
+                        variant: "destructive",
+                      });
+                      
+                      const errorPrompt = `⚠️ Erro ao gerar simulado rápido para ${selectedExam.name} - ${selectedSubject}.\n\n${mockExam}\n\nPor favor, tente novamente em alguns instantes.`;
+                      await sendMessageAndShowModal(errorPrompt, `Erro - Simulado`);
+                    }
                   } catch (error) {
                     console.error('Erro ao gerar simulado rápido:', error);
+                    toast({
+                      title: "Erro",
+                      description: error instanceof Error ? error.message : "Erro desconhecido ao gerar simulado.",
+                      variant: "destructive",
+                    });
+                    
+                    const errorPrompt = `⚠️ Erro ao gerar simulado rápido: ${error instanceof Error ? error.message : 'Erro desconhecido'}\n\nPor favor, tente novamente.`;
+                    await sendMessageAndShowModal(errorPrompt, `Erro - Simulado`);
+                  } finally {
+                    setIsGeneratingQuickMock(false);
                   }
                 }}
               >
-                <Clock size={24} />
-                <span>Simulado Rápido (30min)</span>
+                {isGeneratingQuickMock ? (
+                  <>
+                    <Loader2 size={24} className="animate-spin" />
+                    <span>Gerando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Clock size={24} />
+                    <span>Simulado Rápido (30min)</span>
+                  </>
+                )}
               </Button>
               
               <Button
                 variant="outline"
                 className="h-20 flex flex-col items-center gap-2"
+                disabled={isGeneratingQuickMock || isGeneratingFullMock}
                 onClick={async () => {
+                  setIsGeneratingFullMock(true);
                   try {
+                    toast({
+                      title: "Gerando simulado...",
+                      description: "Isso pode levar alguns instantes. Por favor, aguarde.",
+                    });
+                    
                     const mockExam = await generateMockExam(selectedExam.name, selectedSubject, 'full');
-                    const prompt = `📋 SIMULADO COMPLETO - ${selectedExam.name}
+                    
+                    if (mockExam && !mockExam.includes('⚠️ Erro') && mockExam.length > 50) {
+                      const prompt = `📋 SIMULADO COMPLETO - ${selectedExam.name}
 
 📚 ${selectedSubject} | ⏱️ 2 horas
 
@@ -1030,14 +1038,57 @@ ${mockExam}
 - Simule condições reais
 
 🏆 Este é o momento da verdade!`;
-                    await sendMessage(prompt, []);
+                      
+                      const response = await sendMessageAndShowModal(prompt, `Simulado - ${selectedExam.name}`);
+                      
+                      if (response.success) {
+                        toast({
+                          title: "Simulado gerado!",
+                          description: "O simulado foi enviado para o chat. Abra o chat para visualizar.",
+                        });
+                      } else {
+                        toast({
+                          title: "Erro ao enviar",
+                          description: "O simulado foi gerado, mas houve um erro ao enviar para o chat.",
+                          variant: "destructive",
+                        });
+                      }
+                    } else {
+                      toast({
+                        title: "Erro ao gerar simulado",
+                        description: mockExam || "Não foi possível gerar o simulado. Tente novamente.",
+                        variant: "destructive",
+                      });
+                      
+                      const errorPrompt = `⚠️ Erro ao gerar simulado completo para ${selectedExam.name} - ${selectedSubject}.\n\n${mockExam}\n\nPor favor, tente novamente em alguns instantes.`;
+                      await sendMessageAndShowModal(errorPrompt, `Erro - Simulado`);
+                    }
                   } catch (error) {
                     console.error('Erro ao gerar simulado completo:', error);
+                    toast({
+                      title: "Erro",
+                      description: error instanceof Error ? error.message : "Erro desconhecido ao gerar simulado.",
+                      variant: "destructive",
+                    });
+                    
+                    const errorPrompt = `⚠️ Erro ao gerar simulado completo: ${error instanceof Error ? error.message : 'Erro desconhecido'}\n\nPor favor, tente novamente.`;
+                    await sendMessageAndShowModal(errorPrompt, `Erro - Simulado`);
+                  } finally {
+                    setIsGeneratingFullMock(false);
                   }
                 }}
               >
-                <FileText size={24} />
-                <span>Simulado Completo (2h)</span>
+                {isGeneratingFullMock ? (
+                  <>
+                    <Loader2 size={24} className="animate-spin" />
+                    <span>Gerando...</span>
+                  </>
+                ) : (
+                  <>
+                    <FileText size={24} />
+                    <span>Simulado Completo (2h)</span>
+                  </>
+                )}
               </Button>
             </div>
           </TabsContent>
@@ -1054,23 +1105,8 @@ ${mockExam}
                 className="h-24 flex flex-col items-center gap-2"
                 onClick={async () => {
                   try {
-                    const prompt = `🧠 MÉTODO FEYNMAN - ${selectedSubject}
-
-📚 Matéria: ${selectedSubject}
-🎯 Vestibular: ${selectedExam.name}
-
-Aplique a Técnica Feynman nos tópicos:
-${topics.slice(0, 3).map(topic => `• ${topic}`).join('\n')}
-
-Para cada tópico, crie:
-1️⃣ Explicação simples (como para uma criança)
-2️⃣ Identificação de lacunas no conhecimento
-3️⃣ Analogias do dia a dia
-4️⃣ Exemplos práticos
-5️⃣ Revisão simplificada
-
-💡 "Se você não consegue explicar de forma simples, não entendeu bem o suficiente" - Einstein`;
-                    await sendMessage(prompt, []);
+                    const feynman = await generateFeynmanMethod(selectedExam.name, selectedSubject, topics);
+                    await sendMessageAndShowModal(feynman, `Método Feynman - ${selectedSubject}`);
                   } catch (error) {
                     console.error('Erro ao gerar Método Feynman:', error);
                   }
@@ -1085,24 +1121,8 @@ Para cada tópico, crie:
                 className="h-24 flex flex-col items-center gap-2"
                 onClick={async () => {
                   try {
-                    const prompt = `🔄 REPETIÇÃO ESPAÇADA - ${selectedSubject}
-
-📚 Matéria: ${selectedSubject}
-🎯 Vestibular: ${selectedExam.name}
-
-Crie um cronograma de repetição espaçada para:
-${topics.slice(0, 4).map(topic => `• ${topic}`).join('\n')}
-
-Estrutura:
-📅 Dia 1: Estudo inicial
-📅 Dia 3: Primeira revisão
-📅 Dia 7: Segunda revisão
-📅 Dia 21: Terceira revisão
-📅 Dia 60: Revisão final
-
-🧠 Intervalos otimizados para fixação na memória de longo prazo!
-⏰ Inclua lembretes específicos para cada tópico`;
-                    await sendMessage(prompt, []);
+                    const spacedRep = await generateSpacedRepetition(selectedExam.name, selectedSubject, topics);
+                    await sendMessageAndShowModal(spacedRep, `Repetição Espaçada - ${selectedSubject}`);
                   } catch (error) {
                     console.error('Erro ao gerar Repetição Espaçada:', error);
                   }
@@ -1117,24 +1137,8 @@ Estrutura:
                 className="h-24 flex flex-col items-center gap-2"
                 onClick={async () => {
                   try {
-                    const prompt = `🗺️ MAPAS MENTAIS - ${selectedSubject}
-
-📚 Matéria: ${selectedSubject}
-🎯 Vestibular: ${selectedExam.name}
-
-Crie estruturas de mapas mentais para:
-${topics.slice(0, 3).map(topic => `• ${topic}`).join('\n')}
-
-Para cada tópico:
-🌟 Conceito central
-🌿 Ramificações principais
-🍃 Subtópicos importantes
-🎨 Cores sugeridas
-🖼️ Símbolos visuais
-📝 Palavras-chave
-
-💡 Transforme conceitos abstratos em representações visuais memoráveis!`;
-                    await sendMessage(prompt, []);
+                    const mindMaps = await generateMindMaps(selectedExam.name, selectedSubject, topics);
+                    await sendMessageAndShowModal(mindMaps, `Mapas Mentais - ${selectedSubject}`);
                   } catch (error) {
                     console.error('Erro ao gerar Mapas Mentais:', error);
                   }
@@ -1149,25 +1153,8 @@ Para cada tópico:
                 className="h-24 flex flex-col items-center gap-2"
                 onClick={async () => {
                   try {
-                    const prompt = `🎯 TÉCNICA POMODORO PERSONALIZADA - ${selectedSubject}
-
-📚 Matéria: ${selectedSubject}
-🎯 Vestibular: ${selectedExam.name}
-
-Personalize a Técnica Pomodoro para cada tipo de conteúdo:
-
-${topics.slice(0, 4).map(topic => `📌 ${topic}`).join('\n')}
-
-Para cada tópico, defina:
-⏱️ Duração ideal do foco (15-45min)
-☕ Tipo de pausa recomendada
-🎵 Ambiente sonoro ideal
-📱 Estratégias anti-distração
-🏆 Sistema de recompensas
-📊 Métricas de progresso
-
-💪 Maximize sua concentração e produtividade!`;
-                    await sendMessage(prompt, []);
+                    const pomodoro = await generatePersonalizedPomodoro(selectedExam.name, selectedSubject, topics);
+                    await sendMessageAndShowModal(pomodoro, `Pomodoro - ${selectedSubject}`);
                   } catch (error) {
                     console.error('Erro ao gerar Pomodoro Personalizado:', error);
                   }
@@ -1182,24 +1169,8 @@ Para cada tópico, defina:
                 className="h-24 flex flex-col items-center gap-2"
                 onClick={async () => {
                   try {
-                    const prompt = `🔗 TÉCNICA DE ASSOCIAÇÃO - ${selectedSubject}
-
-📚 Matéria: ${selectedSubject}
-🎯 Vestibular: ${selectedExam.name}
-
-Crie associações poderosas para:
-${topics.slice(0, 4).map(topic => `• ${topic}`).join('\n')}
-
-Tipos de associação:
-🏠 Palácio da Memória (locais familiares)
-🎭 Histórias narrativas
-🎵 Rimas e músicas
-🌈 Associações visuais
-👥 Conexões pessoais
-🔢 Padrões numéricos
-
-🧠 Transforme informações abstratas em memórias vívidas e duradouras!`;
-                    await sendMessage(prompt, []);
+                    const association = await generateAssociationTechnique(selectedExam.name, selectedSubject, topics);
+                    await sendMessageAndShowModal(association, `Associação - ${selectedSubject}`);
                   } catch (error) {
                     console.error('Erro ao gerar Técnica de Associação:', error);
                   }
@@ -1214,24 +1185,8 @@ Tipos de associação:
                 className="h-24 flex flex-col items-center gap-2"
                 onClick={async () => {
                   try {
-                    const prompt = `📝 RESUMOS ESTRATÉGICOS - ${selectedSubject}
-
-📚 Matéria: ${selectedSubject}
-🎯 Vestibular: ${selectedExam.name}
-
-Crie templates de resumos para:
-${topics.slice(0, 3).map(topic => `• ${topic}`).join('\n')}
-
-Estrutura para cada tópico:
-🎯 Conceito em 1 frase
-📋 3 pontos principais
-💡 1 exemplo prático
-⚠️ 1 pegadinha comum
-🔗 Conexões com outros tópicos
-📊 Como aparece na prova
-
-✨ Resumos otimizados para revisão rápida e eficiente!`;
-                    await sendMessage(prompt, []);
+                    const summaries = await generateStrategicSummaries(selectedExam.name, selectedSubject, topics);
+                    await sendMessageAndShowModal(summaries, `Resumos - ${selectedSubject}`);
                   } catch (error) {
                     console.error('Erro ao gerar Resumos Estratégicos:', error);
                   }
@@ -1297,7 +1252,7 @@ ${analysis}
 - Pratique mais questões
 
 💪 Você está no caminho certo! Continue assim!`;
-                    await sendMessage(prompt, []);
+                    await sendMessageAndShowModal(prompt, `Plano de Estudos - ${selectedExam.name}`);
                   } catch (error) {
                     console.error('Erro ao analisar desempenho:', error);
                   }
@@ -1312,24 +1267,8 @@ ${analysis}
                 variant="outline"
                 onClick={async () => {
                   try {
-                    const prompt = `🧠 TÉCNICAS DE MEMORIZAÇÃO - ${selectedSubject}
-
-📚 Matéria: ${selectedSubject}
-🎯 Vestibular: ${selectedExam.name}
-
-Crie técnicas específicas de memorização para:
-
-${topics.slice(0, 5).map(topic => `• ${topic}`).join('\n')}
-
-Incluindo:
-🔹 Mnemônicos personalizados
-🔹 Mapas mentais sugeridos
-🔹 Associações visuais
-🔹 Técnicas de repetição espaçada
-🔹 Flashcards estratégicos
-
-💡 Torne o aprendizado mais eficiente e duradouro!`;
-                    await sendMessage(prompt, []);
+                    const memorization = await generateMemorizationTechniques(selectedExam.name, selectedSubject, topics);
+                    await sendMessageAndShowModal(memorization, `Memorização - ${selectedSubject}`);
                   } catch (error) {
                     console.error('Erro ao gerar técnicas de memorização:', error);
                   }
@@ -1343,6 +1282,62 @@ Incluindo:
           </TabsContent>
         </Tabs>
       </CardContent>
+      
+      {/* Modal para exibir respostas da IA */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>{modalTitle}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsModalOpen(false)}
+                className="h-6 w-6"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto pr-2">
+            {isLoadingResponse ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-3 text-muted-foreground">Gerando resposta...</span>
+              </div>
+            ) : (
+              <div className="prose prose-sm dark:prose-invert max-w-none">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    // Estilização personalizada para markdown
+                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="text-xl font-bold mt-5 mb-3" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="text-lg font-semibold mt-4 mb-2" {...props} />,
+                    p: ({node, ...props}) => <p className="mb-3 leading-relaxed" {...props} />,
+                    ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-1" {...props} />,
+                    ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-1" {...props} />,
+                    li: ({node, ...props}) => <li className="mb-1" {...props} />,
+                    code: ({node, inline, ...props}: any) => 
+                      inline ? (
+                        <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
+                      ) : (
+                        <code className="block bg-muted p-3 rounded-md text-sm font-mono overflow-x-auto mb-4" {...props} />
+                      ),
+                    blockquote: ({node, ...props}) => (
+                      <blockquote className="border-l-4 border-primary pl-4 italic my-4 text-muted-foreground" {...props} />
+                    ),
+                    strong: ({node, ...props}) => <strong className="font-bold" {...props} />,
+                    em: ({node, ...props}) => <em className="italic" {...props} />,
+                  }}
+                >
+                  {modalContent}
+                </ReactMarkdown>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

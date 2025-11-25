@@ -4,13 +4,7 @@ import { Textarea } from '@/shared/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { CheckCircle, Loader2, Copy, Check, AlertCircle } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
-
-interface Correction {
-  original: string;
-  corrected: string;
-  type: 'grammar' | 'spelling' | 'style';
-  explanation: string;
-}
+import { correctText, Correction } from '@/shared/services/toolsService';
 
 const TextCorrector: React.FC = () => {
   const [inputText, setInputText] = useState('');
@@ -20,7 +14,7 @@ const TextCorrector: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
-  const correctText = async () => {
+  const handleCorrectText = async () => {
     if (!inputText.trim()) {
       toast({
         title: "Erro",
@@ -32,36 +26,16 @@ const TextCorrector: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // Simulação de API de IA - substitua pela sua implementação real
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const mockCorrectedText = inputText.replace(/\b(voce|vc)\b/gi, 'você')
-                                        .replace(/\b(nao|naum)\b/gi, 'não')
-                                        .replace(/\b(pq|porque)\b/gi, 'por que');
-      
-      const mockCorrections: Correction[] = [
-        {
-          original: 'voce',
-          corrected: 'você',
-          type: 'spelling',
-          explanation: 'Correção ortográfica: adição do acento circunflexo'
-        },
-        {
-          original: 'nao',
-          corrected: 'não',
-          type: 'spelling',
-          explanation: 'Correção ortográfica: adição do til'
-        }
-      ];
-      
-      setCorrectedText(mockCorrectedText);
-      setCorrections(mockCorrections);
+      const result = await correctText(inputText);
+      setCorrectedText(result.correctedText);
+      setCorrections(result.corrections);
       
       toast({
         title: "Sucesso",
-        description: `Texto corrigido! ${mockCorrections.length} correções encontradas.`,
+        description: `Texto corrigido! ${result.corrections.length} correções encontradas.`,
       });
     } catch (error) {
+      console.error("Erro ao corrigir texto:", error);
       toast({
         title: "Erro",
         description: "Erro ao corrigir texto. Tente novamente.",
@@ -129,7 +103,7 @@ const TextCorrector: React.FC = () => {
               {inputText.length} caracteres
             </span>
             <Button 
-              onClick={correctText} 
+              onClick={handleCorrectText} 
               disabled={isLoading || !inputText.trim()}
               className="bg-green-600 hover:bg-green-700"
             >

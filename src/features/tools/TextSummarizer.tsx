@@ -4,6 +4,7 @@ import { Textarea } from '@/shared/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { FileText, Loader2, Copy, Check } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
+import { summarizeText } from '@/shared/services/toolsService';
 
 const TextSummarizer: React.FC = () => {
   const [inputText, setInputText] = useState('');
@@ -24,17 +25,14 @@ const TextSummarizer: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // Simulação de API de IA - substitua pela sua implementação real
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const mockSummary = `Resumo gerado por IA:\n\nEste é um resumo inteligente do texto fornecido. A IA analisou o conteúdo e extraiu os pontos principais, mantendo as informações mais relevantes de forma concisa e clara.\n\nPontos principais:\n• Informação relevante 1\n• Informação relevante 2\n• Conclusão principal`;
-      
-      setSummary(mockSummary);
+      const summaryResult = await summarizeText(inputText);
+      setSummary(summaryResult);
       toast({
         title: "Sucesso",
         description: "Resumo gerado com sucesso!",
       });
     } catch (error) {
+      console.error("Erro ao gerar resumo:", error);
       toast({
         title: "Erro",
         description: "Erro ao gerar resumo. Tente novamente.",

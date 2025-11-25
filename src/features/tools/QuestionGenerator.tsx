@@ -5,13 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
 import { HelpCircle, Loader2, Copy, Check, RefreshCw } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
-
-interface Question {
-  question: string;
-  type: string;
-  difficulty: string;
-  answer?: string;
-}
+import { generateQuestionsFromText, Question } from '@/shared/services/toolsService';
 
 const QuestionGenerator: React.FC = () => {
   const [inputText, setInputText] = useState('');
@@ -35,48 +29,21 @@ const QuestionGenerator: React.FC = () => {
 
     setIsLoading(true);
     try {
-      // Simulação de API de IA - substitua pela sua implementação real
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      const generatedQuestions = await generateQuestionsFromText(
+        inputText,
+        questionType,
+        difficulty,
+        parseInt(questionCount)
+      );
       
-      const mockQuestions: Question[] = [
-        {
-          question: "Qual é o conceito principal abordado no texto?",
-          type: "Múltipla Escolha",
-          difficulty: difficulty,
-          answer: "A) Conceito A\nB) Conceito B\nC) Conceito C ✓\nD) Conceito D"
-        },
-        {
-          question: "Explique com suas palavras o tema central do conteúdo apresentado.",
-          type: "Dissertativa",
-          difficulty: difficulty
-        },
-        {
-          question: "Verdadeiro ou Falso: O texto apresenta evidências científicas para suas afirmações.",
-          type: "Verdadeiro/Falso",
-          difficulty: difficulty,
-          answer: "Verdadeiro - O texto cita estudos e pesquisas relevantes."
-        },
-        {
-          question: "Complete a frase: O autor argumenta que _______.",
-          type: "Completar",
-          difficulty: difficulty,
-          answer: "a compreensão do tema é fundamental para o desenvolvimento acadêmico"
-        },
-        {
-          question: "Analise criticamente os argumentos apresentados no texto e apresente sua opinião fundamentada.",
-          type: "Análise Crítica",
-          difficulty: difficulty
-        }
-      ];
-      
-      const selectedQuestions = mockQuestions.slice(0, parseInt(questionCount));
-      setQuestions(selectedQuestions);
+      setQuestions(generatedQuestions);
       
       toast({
         title: "Sucesso",
-        description: `${selectedQuestions.length} questões geradas com sucesso!`,
+        description: `${generatedQuestions.length} questões geradas com sucesso!`,
       });
     } catch (error) {
+      console.error("Erro ao gerar questões:", error);
       toast({
         title: "Erro",
         description: "Erro ao gerar questões. Tente novamente.",
