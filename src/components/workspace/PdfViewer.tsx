@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
-import 'pdfjs-dist/web/pdf_viewer.css'; // Import critical CSS for text layer alignment
+// Removendo importação direta do CSS do pacote para evitar conflitos de build/resolução
+// Injetaremos os estilos críticos manualmente no componente
 
 import { 
   ChevronLeft, 
@@ -40,8 +41,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ url, fileName }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textLayerRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
-  // Refs para controle de cancelamento de tarefas
   const renderTaskRef = useRef<pdfjsLib.RenderTask | null>(null);
 
   // 1. Carregar Documento
@@ -68,15 +67,13 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ url, fileName }) => {
     }
   }, [url]);
 
-  // 2. Renderizar Página (Canvas + Text Layer)
+  // 2. Renderizar Página
   useEffect(() => {
     const renderPage = async () => {
       if (!pdfDoc || !canvasRef.current || !textLayerRef.current) return;
 
       try {
         const page = await pdfDoc.getPage(pageNum);
-        
-        // Viewport padrão (scale 1.0 para cálculos base)
         const viewport = page.getViewport({ scale });
         
         const canvas = canvasRef.current;
@@ -85,33 +82,35 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ url, fileName }) => {
 
         if (!context) return;
 
-        // --- Configuração High DPI para o Canvas ---
+        // Ajuste para High DPI (Retina displays)
         const outputScale = window.devicePixelRatio || 1;
 
         canvas.width = Math.floor(viewport.width * outputScale);
         canvas.height = Math.floor(viewport.height * outputScale);
         
-        // Estilos CSS para tamanho visual
-        canvas.style.width = `${Math.floor(viewport.width)}px`;
-        canvas.style.height = `${Math.floor(viewport.height)}px`;
+        // Dimensões visuais (CSS)
+        const displayWidth = Math.floor(viewport.width);
+        const displayHeight = Math.floor(viewport.height);
 
-        // Limpar e dimensionar a camada de texto para bater com o canvas
-        // IMPORTANTE: A classe 'textLayer' do CSS oficial espera essas variáveis
+        canvas.style.width = `${displayWidth}px`;
+        canvas.style.height = `${displayHeight}px`;
+
+        // Configuração da Camada de Texto
+        textLayerDiv.style.width = `${displayWidth}px`;
+        textLayerDiv.style.height = `${displayHeight}px`;
         textLayerDiv.style.setProperty('--scale-factor', `${scale}`);
-        textLayerDiv.style.width = `${Math.floor(viewport.width)}px`;
-        textLayerDiv.style.height = `${Math.floor(viewport.height)}px`;
-        textLayerDiv.innerHTML = ""; // Limpa texto anterior
-        
+        textLayerDiv.innerHTML = ""; // Limpar texto anterior
+
         const transform = outputScale !== 1 
           ? [outputScale, 0, 0, outputScale, 0, 0] 
           : undefined;
 
-        // Cancelar renderização anterior se houver
+        // Cancelar renderização anterior
         if (renderTaskRef.current) {
           renderTaskRef.current.cancel();
         }
 
-        // --- Renderizar Canvas (Imagem) ---
+        // --- A. Renderizar Canvas (Imagem de Fundo) ---
         const renderContext = {
           canvasContext: context,
           transform,
@@ -121,22 +120,30 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ url, fileName }) => {
         renderTaskRef.current = page.render(renderContext);
         await renderTaskRef.current.promise;
 
-        // --- Renderizar Camada de Texto (Seleção) ---
+        // --- B. Renderizar Camada de Texto (Overlay Selecionável) ---
         const textContent = await page.getTextContent();
 
-        // Importa dinamicamente TextLayerBuilder do pdfjs-dist/web/pdf_viewer
-        const { TextLayerBuilder } = await import('pdfjs-dist/web/pdf_viewer');
+        // Renderizar camada de texto manualmente
+        // Inspirado em https://github.com/mozilla/pdf.js/blob/master/examples/components/react/src/PdfViewer.tsx
+        textContent.items.forEach((item: any, index: number) => {
+          const span = document.createElement('span');
+          span.textContent = item.str;
 
-        // Cria e renderiza a camada de texto
-        const textLayer = new TextLayerBuilder({
-          textLayerDiv: textLayerDiv,
-          pageIndex: pageNum - 1,
-          viewport: viewport,
-          enhanceTextSelection: true,
+          // Calcular transformações de posição e escala
+          const tx = pdfjsLib.Util.transform(
+            viewport.transform,
+            item.transform
+          );
+          const style = span.style as CSSStyleDeclaration;
+          style.position = 'absolute';
+          style.left = `${tx[4]}px`;
+          style.top = `${tx[5] - item.height}px`;
+          style.fontSize = `${item.height}px`;
+          style.fontFamily = item.fontName || 'sans-serif';
+          style.transform = `scaleX(${tx[0]})`;
+
+          textLayerDiv.appendChild(span);
         });
-
-        textLayer.setTextContent(textContent);
-        await textLayer.render();
 
       } catch (err: any) {
         if (err.name !== 'RenderingCancelledException') {
@@ -164,9 +171,19 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ url, fileName }) => {
 
   return (
     <div ref={containerRef} className="flex flex-col h-full bg-zinc-100/50 dark:bg-zinc-950/50 m-4 rounded-xl overflow-hidden border border-border shadow-lg group">
-      {/* Styles Específicos para customizar a Camada de Texto sobre o CSS original */}
+      {/* Styles Críticos para a Camada de Texto funcionar e Arredondamento */}
       <style>{`
-        .pdf-viewer-container .textLayer {
+        .pdf-container-wrapper {
+          position: relative;
+          /* Largura definida pelo conteúdo interno (canvas) */
+          width: fit-content; 
+          background-color: white;
+          box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+          border-radius: 0.75rem; /* rounded-xl */
+          overflow: hidden; /* Essencial para o border-radius funcionar no canvas */
+        }
+
+        .textLayer {
             position: absolute;
             left: 0;
             top: 0;
@@ -174,11 +191,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ url, fileName }) => {
             bottom: 0;
             overflow: hidden;
             line-height: 1.0;
-            opacity: 1; /* Importante: deve ser visível para seleção funcionar (mas com texto transparente) */
-            mix-blend-mode: multiply;
+            opacity: 1;
+            z-index: 10; /* Garante que fique sobre o canvas */
+            mix-blend-mode: multiply; /* Melhora visualização do texto selecionado */
         }
 
-        .pdf-viewer-container .textLayer > span {
+        .textLayer > span {
             color: transparent;
             position: absolute;
             white-space: pre;
@@ -186,19 +204,17 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ url, fileName }) => {
             transform-origin: 0% 0%;
         }
 
-        /* Cor da seleção */
-        .pdf-viewer-container .textLayer ::selection {
-            background: rgba(0, 100, 255, 0.2);
+        .textLayer ::selection {
+            background: rgba(59, 130, 246, 0.3);
             color: transparent;
         }
         
-        /* Remove quebras de linha para não afetar layout absoluto */
-        .pdf-viewer-container .textLayer > br {
+        .textLayer > br {
             display: none;
         }
       `}</style>
 
-      {/* Custom Toolbar */}
+      {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border shadow-sm z-10 shrink-0">
         <div className="flex items-center gap-4 overflow-hidden">
           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground min-w-0">
@@ -210,7 +226,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ url, fileName }) => {
           
           <div className="h-4 w-px bg-border shrink-0"></div>
           
-          {/* Pagination */}
           <div className="flex items-center gap-1 bg-muted/50 rounded-md p-0.5 shrink-0">
             <Button 
               variant="ghost" 
@@ -236,7 +251,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ url, fileName }) => {
           </div>
         </div>
 
-        {/* Zoom & Actions */}
         <div className="flex items-center gap-1 shrink-0">
           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => setScale(s => Math.max(0.5, s - 0.2))}>
             <ZoomOut size={16} />
@@ -257,30 +271,31 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ url, fileName }) => {
         </div>
       </div>
 
-      {/* Canvas Area */}
-      <div className="flex-1 bg-zinc-200/50 dark:bg-zinc-950/50 overflow-auto relative flex justify-center p-8 pdf-viewer-container">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground animate-in fade-in">
-            <Loader2 className="animate-spin" size={32} />
-            <p className="text-sm">Carregando documento...</p>
-          </div>
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center h-full gap-3 text-destructive animate-in fade-in">
-            <AlertCircle size={32} />
-            <p className="text-sm font-medium">{error}</p>
-            <Button variant="outline" size="sm" onClick={() => window.open(url, '_blank')}>
-              Abrir em nova aba
-            </Button>
-          </div>
-        ) : (
-          <div className="relative shadow-2xl transition-transform duration-200 ease-out origin-top h-fit bg-white" style={{ width: 'fit-content' }}>
-            {/* Canvas for Rendering (Visual) */}
-            <canvas ref={canvasRef} className="block" />
-            
-            {/* Text Layer for Selection (Overlay) */}
-            <div ref={textLayerRef} className="textLayer" />
-          </div>
-        )}
+      {/* Área de Visualização (Scroll Container) */}
+      <div className="flex-1 bg-zinc-200/50 dark:bg-zinc-950/50 overflow-auto relative w-full">
+        {/* Wrapper interno para centralização e scroll correto */}
+        <div className="min-h-full flex items-center justify-center p-8 w-full">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center gap-3 text-muted-foreground animate-in fade-in">
+              <Loader2 className="animate-spin" size={32} />
+              <p className="text-sm">Carregando documento...</p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center gap-3 text-destructive animate-in fade-in">
+              <AlertCircle size={32} />
+              <p className="text-sm font-medium">{error}</p>
+              <Button variant="outline" size="sm" onClick={() => window.open(url, '_blank')}>
+                Abrir em nova aba
+              </Button>
+            </div>
+          ) : (
+            /* PDF Wrapper com bordas arredondadas */
+            <div className="pdf-container-wrapper">
+              <canvas ref={canvasRef} className="block" />
+              <div ref={textLayerRef} className="textLayer" />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
