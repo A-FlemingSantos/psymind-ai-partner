@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Menu, ArrowRight, ShieldCheck, Sparkles, Clock, Quote, Instagram, Twitter, Linkedin, Bot, MoreHorizontal, ArrowUp, Flower2, Sun, Moon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import { useTheme } from "next-themes";
 
 const Index = () => {

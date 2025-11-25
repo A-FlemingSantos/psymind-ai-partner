@@ -1,17 +1,15 @@
-import { Toaster } from "./components/ui/toaster";
-import { Toaster as Sonner } from "./components/ui/sonner";
-import { TooltipProvider } from "./components/ui/tooltip";
+import { Toaster } from "./shared/components/ui/toaster";
+import { Toaster as Sonner } from "./shared/components/ui/sonner";
+import { TooltipProvider } from "./shared/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { SettingsProvider } from "./components/GlobalSettingsModal";
-// Usando caminhos relativos padrão para garantir a resolução em qualquer ambiente
+import { SettingsProvider } from "./features/settings";
 import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
+import { Login, Register } from "./features/auth";
 import NotFound from "./pages/NotFound";
-import Workspace from "./pages/Workspace";
-import CalendarPage from "./pages/Calendar";
-import Editor from "./pages/Editor";
+import { Workspace } from "./features/workspace";
+import { Calendar } from "./features/calendar";
+import { Editor } from "./features/editor";
 
 const queryClient = new QueryClient();
 
@@ -27,7 +25,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/workspace" element={<Workspace />} />
-            <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/calendar" element={<Calendar />} />
             {/* New Route for Editor */}
             <Route path="/editor" element={<Editor />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
