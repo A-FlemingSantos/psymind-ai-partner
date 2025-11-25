@@ -8,3 +8,7 @@ export { default as FlashcardMaker } from './FlashcardMaker';
 export { default as CalculatorTool } from './Calculator';
 export { default as KindnessTracker } from './KindnessTracker';
 export { default as ExamPrep } from './ExamPrep';
+export { default as AITranslator } from './AITranslator';
+export { default as QuestionGenerator } from './QuestionGenerator';
+export { default as TextCorrector } from './TextCorrector';
+export { default as TextSummarizer } from './TextSummarizer';

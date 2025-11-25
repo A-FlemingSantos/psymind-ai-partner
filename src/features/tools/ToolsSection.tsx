@@ -7,7 +7,10 @@ import {
   Heart,
   Clock,
   Quote,
-  X
+  X,
+  Languages,
+  HelpCircle,
+  CheckCircle
 } from 'lucide-react';
 import { usePomodoro } from './PomodoroContext';
 import { cn } from '@/shared/utils';
@@ -21,6 +24,10 @@ import FlashcardMaker from './FlashcardMaker';
 import CalculatorTool from './Calculator';
 import KindnessTracker from './KindnessTracker';
 import ExamPrep from './ExamPrep';
+import AITranslator from './AITranslator';
+import QuestionGenerator from './QuestionGenerator';
+import TextCorrector from './TextCorrector';
+import TextSummarizer from './TextSummarizer';
 
 interface Tool {
   id: string;
@@ -37,6 +44,42 @@ const ToolsSection: React.FC = () => {
   const { formatTime, timeLeft, isActive } = usePomodoro();
 
   const tools: Tool[] = [
+        {
+          id: 'ai-translator',
+          name: 'Tradutor IA',
+          description: 'Traduza textos com inteligência artificial',
+          icon: <Languages size={24} />,
+          category: 'analysis',
+          color: 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400',
+          onClick: () => setSelectedTool('ai-translator')
+        },
+        {
+          id: 'question-generator',
+          name: 'Gerador de Questões',
+          description: 'Crie questões para estudo a partir de textos',
+          icon: <HelpCircle size={24} />,
+          category: 'analysis',
+          color: 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-600 dark:text-cyan-400',
+          onClick: () => setSelectedTool('question-generator')
+        },
+        {
+          id: 'text-corrector',
+          name: 'Corretor de Texto',
+          description: 'Corrija gramática, ortografia e estilo de textos',
+          icon: <CheckCircle size={24} />,
+          category: 'analysis',
+          color: 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',
+          onClick: () => setSelectedTool('text-corrector')
+        },
+        {
+          id: 'text-summarizer',
+          name: 'Resumidor de Texto',
+          description: 'Resuma textos automaticamente com IA',
+          icon: <FileText size={24} />,
+          category: 'analysis',
+          color: 'bg-gray-50 dark:bg-gray-900/20 text-gray-600 dark:text-gray-400',
+          onClick: () => setSelectedTool('text-summarizer')
+        },
     {
       id: 'calculator',
       name: 'Calculadora',
@@ -146,6 +189,14 @@ const ToolsSection: React.FC = () => {
         return <KindnessTracker />;
       case 'exam-prep':
         return <ExamPrep />;
+      case 'ai-translator':
+        return <AITranslator />;
+      case 'question-generator':
+        return <QuestionGenerator />;
+      case 'text-corrector':
+        return <TextCorrector />;
+      case 'text-summarizer':
+        return <TextSummarizer />;
       default:
         return null;
     }

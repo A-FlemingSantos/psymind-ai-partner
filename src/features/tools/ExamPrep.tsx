@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { GraduationCap, Calculator, BookOpen, Target, ArrowLeft, School, Languages, History, Globe, Atom, Zap, Beaker, Dna, PenTool, Mic, Headphones, Palette, Users, Code, Telescope, Trophy } from 'lucide-react';
-import { generateExamStrategy, generateStudyPlan, explainTopic, generatePracticeQuestions } from '@/shared/services';
+import React, { useState, useEffect } from 'react';
+import { GraduationCap, Calculator, BookOpen, Target, ArrowLeft, School, Languages, History, Globe, Zap, Beaker, Dna, PenTool, Mic, Headphones, Palette, Users, Code, Telescope, Trophy, Calendar, Clock, BarChart3, FileText, Timer, TrendingUp, Award, CheckCircle } from 'lucide-react';
+import { generateExamStrategy, generateStudyPlan, explainTopic, generatePracticeQuestions, generateStudySchedule, generateMockExam, analyzePerformance } from '@/shared/services';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
+import { Progress } from '@/shared/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { sendMessage } from '@/shared/services/chatService';
 
 const ExamPrep: React.FC = () => {
@@ -12,6 +14,20 @@ const ExamPrep: React.FC = () => {
   const [selectedExam, setSelectedExam] = useState<any>(null);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [showCalculator, setShowCalculator] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [studyProgress, setStudyProgress] = useState<{[key: string]: number}>({});
+  const [examDate, setExamDate] = useState('');
+  const [studyHoursPerDay, setStudyHoursPerDay] = useState('4');
+
+
+  useEffect(() => {
+    if (selectedExam && selectedSubject) {
+      const saved = localStorage.getItem(`progress_${selectedExam.name}_${selectedSubject}`);
+      if (saved) {
+        setStudyProgress(JSON.parse(saved));
+      }
+    }
+  }, [selectedExam?.name, selectedSubject]);
 
   // ENEM Calculator States
   const [scores, setScores] = useState({
@@ -478,7 +494,7 @@ Seja realista mas encorajador! 💪`;
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className={`${selectedExam.subjects.length % 3 !== 0 ? 'flex flex-wrap justify-center gap-4' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'}`}>
             {selectedExam.subjects.map((subject: string, index: number) => {
               const getSubjectIcon = (subjectName: string) => {
                 const lower = subjectName.toLowerCase();
@@ -500,12 +516,34 @@ Seja realista mas encorajador! 💪`;
                 if (lower.includes('aritmética') || lower.includes('álgebra') || lower.includes('geometria')) return Calculator;
                 return BookOpen;
               };
+              
+              const getSubjectColor = (subjectName: string) => {
+                const lower = subjectName.toLowerCase();
+                if (lower.includes('math') || lower.includes('matemática') || lower.includes('calculator')) return 'bg-red-100 hover:bg-red-200 border-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/40 dark:border-red-800/50 text-red-900 dark:text-red-100';
+                if (lower.includes('reading') || lower.includes('literature') || lower.includes('português') || lower.includes('linguagens')) return 'bg-blue-100 hover:bg-blue-200 border-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-800/40 dark:border-blue-800/50 text-blue-900 dark:text-blue-100';
+                if (lower.includes('writing') || lower.includes('redação')) return 'bg-purple-100 hover:bg-purple-200 border-purple-200 dark:bg-purple-900/30 dark:hover:bg-purple-800/40 dark:border-purple-800/50 text-purple-900 dark:text-purple-100';
+                if (lower.includes('listening') || lower.includes('speaking')) return 'bg-pink-100 hover:bg-pink-200 border-pink-200 dark:bg-pink-900/30 dark:hover:bg-pink-800/40 dark:border-pink-800/50 text-pink-900 dark:text-pink-100';
+                if (lower.includes('english') || lower.includes('inglês') || lower.includes('language')) return 'bg-indigo-100 hover:bg-indigo-200 border-indigo-200 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/40 dark:border-indigo-800/50 text-indigo-900 dark:text-indigo-100';
+                if (lower.includes('história') || lower.includes('history')) return 'bg-amber-100 hover:bg-amber-200 border-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-800/40 dark:border-amber-800/50 text-amber-900 dark:text-amber-100';
+                if (lower.includes('geografia') || lower.includes('geography') || lower.includes('societies')) return 'bg-green-100 hover:bg-green-200 border-green-200 dark:bg-green-900/30 dark:hover:bg-green-800/40 dark:border-green-800/50 text-green-900 dark:text-green-100';
+                if (lower.includes('física') || lower.includes('physics') || lower.includes('mecânica') || lower.includes('eletromagnetismo')) return 'bg-yellow-100 hover:bg-yellow-200 border-yellow-200 dark:bg-yellow-900/30 dark:hover:bg-yellow-800/40 dark:border-yellow-800/50 text-yellow-900 dark:text-yellow-100';
+                if (lower.includes('química') || lower.includes('chemistry') || lower.includes('orgânica')) return 'bg-orange-100 hover:bg-orange-200 border-orange-200 dark:bg-orange-900/30 dark:hover:bg-orange-800/40 dark:border-orange-800/50 text-orange-900 dark:text-orange-100';
+                if (lower.includes('biologia') || lower.includes('biology') || lower.includes('natureza') || lower.includes('sciences')) return 'bg-emerald-100 hover:bg-emerald-200 border-emerald-200 dark:bg-emerald-900/30 dark:hover:bg-emerald-800/40 dark:border-emerald-800/50 text-emerald-900 dark:text-emerald-100';
+                if (lower.includes('arts') || lower.includes('artes')) return 'bg-rose-100 hover:bg-rose-200 border-rose-200 dark:bg-rose-900/30 dark:hover:bg-rose-800/40 dark:border-rose-800/50 text-rose-900 dark:text-rose-100';
+                if (lower.includes('humanas') || lower.includes('individuals')) return 'bg-teal-100 hover:bg-teal-200 border-teal-200 dark:bg-teal-900/30 dark:hover:bg-teal-800/40 dark:border-teal-800/50 text-teal-900 dark:text-teal-100';
+                if (lower.includes('algoritmos') || lower.includes('programação') || lower.includes('informática')) return 'bg-slate-100 hover:bg-slate-200 border-slate-200 dark:bg-slate-900/30 dark:hover:bg-slate-800/40 dark:border-slate-800/50 text-slate-900 dark:text-slate-100';
+                if (lower.includes('astronomia') || lower.includes('sistema solar') || lower.includes('estrelas')) return 'bg-violet-100 hover:bg-violet-200 border-violet-200 dark:bg-violet-900/30 dark:hover:bg-violet-800/40 dark:border-violet-800/50 text-violet-900 dark:text-violet-100';
+                if (lower.includes('aritmética') || lower.includes('álgebra') || lower.includes('geometria')) return 'bg-red-100 hover:bg-red-200 border-red-200 dark:bg-red-900/30 dark:hover:bg-red-800/40 dark:border-red-800/50 text-red-900 dark:text-red-100';
+                return 'bg-gray-100 hover:bg-gray-200 border-gray-200 dark:bg-gray-900/30 dark:hover:bg-gray-800/40 dark:border-gray-800/50 text-gray-900 dark:text-gray-100';
+              };
+              
               const IconComponent = getSubjectIcon(subject);
+              const colorClass = getSubjectColor(subject);
               return (
                 <Button
                   key={index}
                   variant="outline"
-                  className="h-20 flex flex-col items-center gap-2"
+                  className={`h-20 flex flex-col items-center gap-2 ${selectedExam.subjects.length % 3 !== 0 ? 'w-48' : ''} ${colorClass}`}
                   onClick={() => setSelectedSubject(subject)}
                 >
                   <IconComponent size={20} />
@@ -521,22 +559,68 @@ Seja realista mas encorajador! 💪`;
 
   const topics = getTopicsForSubject(selectedSubject);
 
+  const updateProgress = (topic: string, progress: number) => {
+    const newProgress = { ...studyProgress, [topic]: progress };
+    setStudyProgress(newProgress);
+    localStorage.setItem(`progress_${selectedExam.name}_${selectedSubject}`, JSON.stringify(newProgress));
+  };
+
+  const overallProgress = topics.length > 0 ? 
+    Object.values(studyProgress).reduce((sum, val) => sum + val, 0) / topics.length : 0;
+
   return (
-    <Card className="w-full max-w-4xl">
+    <Card className="w-full max-w-6xl">
       <CardHeader>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={() => setSelectedSubject(null)}>
             <ArrowLeft size={16} />
           </Button>
-          <CardTitle>{selectedSubject}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            {selectedSubject}
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <TrendingUp size={16} />
+              {Math.round(overallProgress)}% concluído
+            </div>
+          </CardTitle>
         </div>
+        <Progress value={overallProgress} className="w-full" />
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={async () => {
-              const plan = await generateStudyPlan(selectedExam.name, selectedSubject, topics);
-              const prompt = `🎯 PLANO DE ESTUDOS PERSONALIZADO
+      <CardContent>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="overview" className="flex items-center gap-1">
+              <BookOpen size={14} />
+              Visão Geral
+            </TabsTrigger>
+            <TabsTrigger value="schedule" className="flex items-center gap-1">
+              <Calendar size={14} />
+              Cronograma
+            </TabsTrigger>
+            <TabsTrigger value="practice" className="flex items-center gap-1">
+              <Target size={14} />
+              Prática
+            </TabsTrigger>
+            <TabsTrigger value="mock" className="flex items-center gap-1">
+              <Timer size={14} />
+              Simulados
+            </TabsTrigger>
+            <TabsTrigger value="techniques" className="flex items-center gap-1">
+              <Zap size={14} />
+              Técnicas
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-1">
+              <BarChart3 size={14} />
+              Análise
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <Button
+                onClick={async () => {
+                  try {
+                    const plan = await generateStudyPlan(selectedExam.name, selectedSubject, topics);
+                    const prompt = `🎯 PLANO DE ESTUDOS PERSONALIZADO
 
 📚 ${selectedExam.name} - ${selectedSubject}
 
@@ -547,19 +631,29 @@ ${plan}
 - Faça pausas regulares
 - Pratique questões anteriores
 - Acredite no seu potencial!`;
-              await sendMessage(prompt, []);
-            }}
-            className="flex items-center gap-2"
-          >
-            <Target size={16} />
-            Criar Plano de Estudos com IA
-          </Button>
-          
-          <Button
-            variant="outline"
-            onClick={async () => {
-              const prompt = `Analise a estratégia de preparação para ${selectedExam.name} - ${selectedSubject}:
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar plano de estudos:', error);
+                  }
+                }}
+                className="flex items-center gap-2"
+              >
+                <Target size={16} />
+                Plano de Estudos IA
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const strategy = await generateExamStrategy(selectedExam.name, selectedSubject);
+                    const prompt = `🎯 ESTRATÉGIA DE PREPARAÇÃO
 
+📚 ${selectedExam.name} - ${selectedSubject}
+
+${strategy}
+
+💡 Dicas adicionais:
 🎯 Como devo priorizar meus estudos?
 📊 Quais são os tópicos que mais caem?
 ⚡ Técnicas de resolução rápida
@@ -567,59 +661,687 @@ ${plan}
 📝 Dicas de gestão de tempo durante o exame
 
 Dê conselhos práticos e motivadores!`;
-              await sendMessage(prompt, []);
-            }}
-            className="flex items-center gap-2"
-          >
-            <GraduationCap size={16} />
-            Estratégia de Prova
-          </Button>
-        </div>
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar estratégia:', error);
+                  }
+                }}
+                className="flex items-center gap-2"
+              >
+                <GraduationCap size={16} />
+                Estratégia de Prova
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const prompt = `📚 BIBLIOGRAFIA ESSENCIAL - ${selectedSubject}
 
-        <div className="space-y-3">
-          <h4 className="font-medium">Tópicos do Programa:</h4>
-          {topics.map((topic, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-              <span className="flex-1">{topic}</span>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={async () => {
-                    const explanation = await explainTopic(selectedExam.name, selectedSubject, topic);
-                    const prompt = `📚 EXPLICAÇÃO DETALHADA
+🎯 Vestibular: ${selectedExam.name}
+📝 Matéria: ${selectedSubject}
+
+Recomende:
+
+📚 LIVROS PRINCIPAIS (3-5 títulos)
+- Autor, título e por que é essencial
+- Qual parte focar para ${selectedExam.name}
+
+📱 RECURSOS DIGITAIS
+- Apps recomendados
+- Canais do YouTube
+- Sites especializados
+- Plataformas online
+
+📝 MATERIAIS COMPLEMENTARES
+- Apostilas específicas
+- Resumos e mapas mentais
+- Bancos de questões
+
+📊 COMO USAR CADA RECURSO
+- Ordem de estudo
+- Tempo dedicado a cada um
+- Dicas de aproveitamento
+
+💡 Foque nos recursos mais eficientes para ${selectedExam.name}!`;
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar bibliografia:', error);
+                  }
+                }}
+                className="flex items-center gap-2"
+              >
+                <BookOpen size={16} />
+                Bibliografia
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const prompt = `🧠 COACH MOTIVACIONAL - ${selectedSubject}
+
+🎯 Vestibular: ${selectedExam.name}
+📚 Matéria: ${selectedSubject}
+
+Como seu coach pessoal, vou te ajudar com:
+
+💪 MOTIVAÇÃO DIÁRIA
+- Frases inspiradoras personalizadas
+- Lembretes do seu objetivo
+- Celebração de pequenas vitórias
+
+🧘 GESTÃO DE ANSIEDADE
+- Técnicas de respiração
+- Exercícios de relaxamento
+- Mindfulness para estudos
+
+🎯 FOCO E DISCIPLINA
+- Como manter consistência
+- Superar procrastinação
+- Criar hábitos de estudo
+
+🚀 MENTALIDADE VENCEDORA
+- Visualização do sucesso
+- Autoconfiança
+- Resiliência nos estudos
+
+🏆 Você TEM potencial! Vamos desbloqueá-lo juntos!`;
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar coaching:', error);
+                  }
+                }}
+                className="flex items-center gap-2"
+              >
+                <Award size={16} />
+                Coach Motivacional
+              </Button>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="font-medium">Tópicos do Programa:</h4>
+              {topics.map((topic, index) => {
+                const progress = studyProgress[topic] || 0;
+                return (
+                  <div key={index} className="p-4 bg-muted rounded-lg space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="flex-1 font-medium">{topic}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">{progress}%</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={async () => {
+                            const explanation = await explainTopic(selectedExam.name, selectedSubject, topic);
+                            const prompt = `📚 EXPLICAÇÃO DETALHADA
 
 📌 ${topic} - ${selectedExam.name}
 
 ${explanation}
 
 💡 Continue estudando! Cada conceito dominado te aproxima do seu objetivo.`;
-                    await sendMessage(prompt, []);
-                  }}
-                >
-                  <BookOpen size={14} />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={async () => {
-                    const questions = await generatePracticeQuestions(selectedExam.name, selectedSubject, topic);
-                    const prompt = `🎯 QUESTÕES DE PRÁTICA
+                            await sendMessage(prompt, []);
+                          }}
+                        >
+                          <BookOpen size={14} />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={async () => {
+                            const questions = await generatePracticeQuestions(selectedExam.name, selectedSubject, topic);
+                            const prompt = `🎯 QUESTÕES DE PRÁTICA
 
 📝 ${topic} - ${selectedExam.name}
 
 ${questions}
 
 🚀 Pratique regularmente! A repetição é a chave do sucesso.`;
-                    await sendMessage(prompt, []);
-                  }}
-                >
-                  <Target size={14} />
-                </Button>
+                            await sendMessage(prompt, []);
+                          }}
+                        >
+                          <Target size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                    <Progress value={progress} className="w-full" />
+                    <div className="flex justify-between items-center">
+                      <div className="flex gap-2">
+                        {[25, 50, 75, 100].map(val => (
+                          <Button
+                            key={val}
+                            size="sm"
+                            variant={progress >= val ? "default" : "outline"}
+                            onClick={() => updateProgress(topic, val)}
+                            className="text-xs"
+                          >
+                            {val === 25 ? '🟡' : val === 50 ? '🟠' : val === 75 ? '🔵' : '🟢'} {val}%
+                          </Button>
+                        ))}
+                      </div>
+                      {progress === 100 && (
+                        <div className="flex items-center gap-1 text-green-600">
+                          <CheckCircle size={16} />
+                          <span className="text-xs font-medium">Concluído!</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="schedule" className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Data da Prova</label>
+                <Input
+                  type="date"
+                  value={examDate}
+                  onChange={(e) => setExamDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Horas de Estudo/Dia</label>
+                <Select value={studyHoursPerDay} onValueChange={setStudyHoursPerDay}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2">2 horas</SelectItem>
+                    <SelectItem value="4">4 horas</SelectItem>
+                    <SelectItem value="6">6 horas</SelectItem>
+                    <SelectItem value="8">8 horas</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-          ))}
-        </div>
+            
+            <Button
+              onClick={async () => {
+                try {
+                  if (!examDate) {
+                    alert('Por favor, defina a data da prova primeiro.');
+                    return;
+                  }
+                  const schedule = await generateStudySchedule(selectedExam.name, selectedSubject, topics, examDate, parseInt(studyHoursPerDay));
+                  const prompt = `📅 CRONOGRAMA PERSONALIZADO
+
+🎯 ${selectedExam.name} - ${selectedSubject}
+📆 Data da Prova: ${new Date(examDate).toLocaleDateString('pt-BR')}
+⏰ ${studyHoursPerDay}h/dia de estudo
+
+${schedule}
+
+🎯 Dicas para seguir o cronograma:
+- Use alarmes para lembrar dos horários
+- Faça pausas de 15min a cada hora
+- Revise o progresso semanalmente
+- Ajuste conforme necessário
+
+💪 Você consegue! Disciplina é a chave do sucesso!`;
+                  await sendMessage(prompt, []);
+                } catch (error) {
+                  console.error('Erro ao gerar cronograma:', error);
+                }
+              }}
+              className="w-full flex items-center gap-2"
+            >
+              <Calendar size={16} />
+              Gerar Cronograma Inteligente
+            </Button>
+          </TabsContent>
+
+          <TabsContent value="practice" className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center gap-2"
+                onClick={async () => {
+                  try {
+                    const prompt = `🎯 QUESTÕES RÁPIDAS - ${selectedExam.name}
+
+📚 Matéria: ${selectedSubject}
+
+Gere 5 questões de múltipla escolha (nível fácil-médio) com:
+- Enunciado claro
+- 5 alternativas (A-E)
+- Gabarito comentado
+- Tempo estimado: 2min/questão
+
+Foque nos tópicos mais cobrados! 🚀`;
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar questões rápidas:', error);
+                  }
+                }}
+              >
+                <Zap size={20} />
+                <span className="text-center">Questões Rápidas</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center gap-2"
+                onClick={async () => {
+                  try {
+                    const prompt = `📝 QUESTÕES DISSERTATIVAS - ${selectedExam.name}
+
+📚 Matéria: ${selectedSubject}
+
+Crie 3 questões dissertativas com:
+- Enunciado contextualizado
+- Critérios de correção
+- Resposta modelo
+- Dicas de estruturação
+
+Estilo ${selectedExam.name}! ✍️`;
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar questões dissertativas:', error);
+                  }
+                }}
+              >
+                <PenTool size={20} />
+                <span className="text-center">Questões Dissertativas</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center gap-2"
+                onClick={async () => {
+                  try {
+                    const prompt = `🔥 QUESTÕES DESAFIO - ${selectedExam.name}
+
+📚 Matéria: ${selectedSubject}
+
+Crie 3 questões de nível avançado:
+- Interdisciplinares
+- Raciocínio complexo
+- Resolução detalhada
+- Dicas de abordagem
+
+Para quem quer se destacar! 🏆`;
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar questões desafio:', error);
+                  }
+                }}
+              >
+                <Trophy size={20} />
+                <span className="text-center">Questões Desafio</span>
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="mock" className="space-y-6 mt-6">
+            <div className="text-center space-y-4">
+              <h3 className="text-lg font-semibold">Simulados Personalizados</h3>
+              <p className="text-muted-foreground">Pratique com simulados no formato real da prova</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button
+                className="h-20 flex flex-col items-center gap-2"
+                onClick={async () => {
+                  try {
+                    const mockExam = await generateMockExam(selectedExam.name, selectedSubject, 'quick');
+                    const prompt = `⚡ SIMULADO RÁPIDO - ${selectedExam.name}
+
+📚 ${selectedSubject} | ⏱️ 30 minutos
+
+${mockExam}
+
+🎯 Instruções:
+- Cronometre 30 minutos
+- Não consulte material
+- Anote suas respostas
+- Compare com o gabarito
+
+💪 Boa sorte! Trate como prova real!`;
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar simulado rápido:', error);
+                  }
+                }}
+              >
+                <Clock size={24} />
+                <span>Simulado Rápido (30min)</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="h-20 flex flex-col items-center gap-2"
+                onClick={async () => {
+                  try {
+                    const mockExam = await generateMockExam(selectedExam.name, selectedSubject, 'full');
+                    const prompt = `📋 SIMULADO COMPLETO - ${selectedExam.name}
+
+📚 ${selectedSubject} | ⏱️ 2 horas
+
+${mockExam}
+
+🎯 Instruções:
+- Ambiente silencioso
+- Cronometre 2 horas
+- Sem consultas
+- Simule condições reais
+
+🏆 Este é o momento da verdade!`;
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar simulado completo:', error);
+                  }
+                }}
+              >
+                <FileText size={24} />
+                <span>Simulado Completo (2h)</span>
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="techniques" className="space-y-6 mt-6">
+            <div className="text-center space-y-4">
+              <h3 className="text-lg font-semibold">Técnicas de Estudo Avançadas</h3>
+              <p className="text-muted-foreground">Otimize seu aprendizado com métodos cientificamente comprovados</p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center gap-2"
+                onClick={async () => {
+                  try {
+                    const prompt = `🧠 MÉTODO FEYNMAN - ${selectedSubject}
+
+📚 Matéria: ${selectedSubject}
+🎯 Vestibular: ${selectedExam.name}
+
+Aplique a Técnica Feynman nos tópicos:
+${topics.slice(0, 3).map(topic => `• ${topic}`).join('\n')}
+
+Para cada tópico, crie:
+1️⃣ Explicação simples (como para uma criança)
+2️⃣ Identificação de lacunas no conhecimento
+3️⃣ Analogias do dia a dia
+4️⃣ Exemplos práticos
+5️⃣ Revisão simplificada
+
+💡 "Se você não consegue explicar de forma simples, não entendeu bem o suficiente" - Einstein`;
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar Método Feynman:', error);
+                  }
+                }}
+              >
+                <Users size={20} />
+                <span className="text-center">Método Feynman</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center gap-2"
+                onClick={async () => {
+                  try {
+                    const prompt = `🔄 REPETIÇÃO ESPAÇADA - ${selectedSubject}
+
+📚 Matéria: ${selectedSubject}
+🎯 Vestibular: ${selectedExam.name}
+
+Crie um cronograma de repetição espaçada para:
+${topics.slice(0, 4).map(topic => `• ${topic}`).join('\n')}
+
+Estrutura:
+📅 Dia 1: Estudo inicial
+📅 Dia 3: Primeira revisão
+📅 Dia 7: Segunda revisão
+📅 Dia 21: Terceira revisão
+📅 Dia 60: Revisão final
+
+🧠 Intervalos otimizados para fixação na memória de longo prazo!
+⏰ Inclua lembretes específicos para cada tópico`;
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar Repetição Espaçada:', error);
+                  }
+                }}
+              >
+                <Clock size={20} />
+                <span className="text-center">Repetição Espaçada</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center gap-2"
+                onClick={async () => {
+                  try {
+                    const prompt = `🗺️ MAPAS MENTAIS - ${selectedSubject}
+
+📚 Matéria: ${selectedSubject}
+🎯 Vestibular: ${selectedExam.name}
+
+Crie estruturas de mapas mentais para:
+${topics.slice(0, 3).map(topic => `• ${topic}`).join('\n')}
+
+Para cada tópico:
+🌟 Conceito central
+🌿 Ramificações principais
+🍃 Subtópicos importantes
+🎨 Cores sugeridas
+🖼️ Símbolos visuais
+📝 Palavras-chave
+
+💡 Transforme conceitos abstratos em representações visuais memoráveis!`;
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar Mapas Mentais:', error);
+                  }
+                }}
+              >
+                <Telescope size={20} />
+                <span className="text-center">Mapas Mentais</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center gap-2"
+                onClick={async () => {
+                  try {
+                    const prompt = `🎯 TÉCNICA POMODORO PERSONALIZADA - ${selectedSubject}
+
+📚 Matéria: ${selectedSubject}
+🎯 Vestibular: ${selectedExam.name}
+
+Personalize a Técnica Pomodoro para cada tipo de conteúdo:
+
+${topics.slice(0, 4).map(topic => `📌 ${topic}`).join('\n')}
+
+Para cada tópico, defina:
+⏱️ Duração ideal do foco (15-45min)
+☕ Tipo de pausa recomendada
+🎵 Ambiente sonoro ideal
+📱 Estratégias anti-distração
+🏆 Sistema de recompensas
+📊 Métricas de progresso
+
+💪 Maximize sua concentração e produtividade!`;
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar Pomodoro Personalizado:', error);
+                  }
+                }}
+              >
+                <Timer size={20} />
+                <span className="text-center">Pomodoro Personalizado</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center gap-2"
+                onClick={async () => {
+                  try {
+                    const prompt = `🔗 TÉCNICA DE ASSOCIAÇÃO - ${selectedSubject}
+
+📚 Matéria: ${selectedSubject}
+🎯 Vestibular: ${selectedExam.name}
+
+Crie associações poderosas para:
+${topics.slice(0, 4).map(topic => `• ${topic}`).join('\n')}
+
+Tipos de associação:
+🏠 Palácio da Memória (locais familiares)
+🎭 Histórias narrativas
+🎵 Rimas e músicas
+🌈 Associações visuais
+👥 Conexões pessoais
+🔢 Padrões numéricos
+
+🧠 Transforme informações abstratas em memórias vívidas e duradouras!`;
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar Técnica de Associação:', error);
+                  }
+                }}
+              >
+                <Zap size={20} />
+                <span className="text-center">Técnica de Associação</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center gap-2"
+                onClick={async () => {
+                  try {
+                    const prompt = `📝 RESUMOS ESTRATÉGICOS - ${selectedSubject}
+
+📚 Matéria: ${selectedSubject}
+🎯 Vestibular: ${selectedExam.name}
+
+Crie templates de resumos para:
+${topics.slice(0, 3).map(topic => `• ${topic}`).join('\n')}
+
+Estrutura para cada tópico:
+🎯 Conceito em 1 frase
+📋 3 pontos principais
+💡 1 exemplo prático
+⚠️ 1 pegadinha comum
+🔗 Conexões com outros tópicos
+📊 Como aparece na prova
+
+✨ Resumos otimizados para revisão rápida e eficiente!`;
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar Resumos Estratégicos:', error);
+                  }
+                }}
+              >
+                <FileText size={20} />
+                <span className="text-center">Resumos Estratégicos</span>
+              </Button>
+            </div>
+            
+            <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">💡 Dica do Especialista</h4>
+              <p className="text-blue-700 dark:text-blue-300 text-sm">
+                Combine diferentes técnicas para maximizar o aprendizado. Use mapas mentais para visão geral, 
+                Feynman para compreensão profunda, e repetição espaçada para fixação duradoura.
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-6 mt-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-green-600">{Math.round(overallProgress)}%</div>
+                  <div className="text-sm text-muted-foreground">Progresso Geral</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {Object.values(studyProgress).filter(p => p === 100).length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Tópicos Concluídos</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-orange-600">
+                    {topics.length - Object.values(studyProgress).filter(p => p === 100).length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Tópicos Restantes</div>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Button
+                onClick={async () => {
+                  try {
+                    const analysis = await analyzePerformance(selectedExam.name, selectedSubject, studyProgress, topics);
+                    const prompt = `📊 ANÁLISE DE DESEMPENHO
+
+🎯 ${selectedExam.name} - ${selectedSubject}
+
+${analysis}
+
+🎯 Próximos Passos:
+- Foque nos pontos fracos identificados
+- Mantenha a consistência nos estudos
+- Faça revisões regulares
+- Pratique mais questões
+
+💪 Você está no caminho certo! Continue assim!`;
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao analisar desempenho:', error);
+                  }
+                }}
+                className="flex items-center gap-2"
+              >
+                <BarChart3 size={16} />
+                Analisar Desempenho
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const prompt = `🧠 TÉCNICAS DE MEMORIZAÇÃO - ${selectedSubject}
+
+📚 Matéria: ${selectedSubject}
+🎯 Vestibular: ${selectedExam.name}
+
+Crie técnicas específicas de memorização para:
+
+${topics.slice(0, 5).map(topic => `• ${topic}`).join('\n')}
+
+Incluindo:
+🔹 Mnemônicos personalizados
+🔹 Mapas mentais sugeridos
+🔹 Associações visuais
+🔹 Técnicas de repetição espaçada
+🔹 Flashcards estratégicos
+
+💡 Torne o aprendizado mais eficiente e duradouro!`;
+                    await sendMessage(prompt, []);
+                  } catch (error) {
+                    console.error('Erro ao gerar técnicas de memorização:', error);
+                  }
+                }}
+                className="flex items-center gap-2"
+              >
+                <Zap size={16} />
+                Técnicas de Memorização
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );
