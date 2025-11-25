@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   FileText, 
   Calculator, 
@@ -10,21 +10,31 @@ import {
   Code,
   Palette,
   Brain,
-  Zap
+  Zap,
+  Heart,
+  Clock,
+  Quote,
+  X
 } from 'lucide-react';
 import { cn } from '@/shared/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
+import MoodTracker from './MoodTracker';
+import PomodoroTimer from './PomodoroTimer';
+import ReflectionGenerator from './ReflectionGenerator';
 
 interface Tool {
   id: string;
   name: string;
   description: string;
   icon: React.ReactNode;
-  category: 'productivity' | 'creative' | 'analysis';
+  category: 'productivity' | 'creative' | 'analysis' | 'wellbeing';
   color: string;
   onClick: () => void;
 }
 
 const ToolsSection: React.FC = () => {
+  const [selectedTool, setSelectedTool] = useState<string | null>(null);
+
   const tools: Tool[] = [
     {
       id: 'text-editor',
@@ -106,16 +116,64 @@ const ToolsSection: React.FC = () => {
       category: 'creative',
       color: 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400',
       onClick: () => console.log('Ferramenta de Design')
+    },
+    // Ferramentas PsyMindAI
+    {
+      id: 'mood-tracker',
+      name: 'Rastreador de Humor',
+      description: 'Monitore e analise seu estado emocional',
+      icon: <Heart size={24} />,
+      category: 'wellbeing',
+      color: 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400',
+      onClick: () => setSelectedTool('mood-tracker')
+    },
+    {
+      id: 'pomodoro-timer',
+      name: 'Timer Pomodoro',
+      description: 'Técnica de produtividade com dicas de IA',
+      icon: <Clock size={24} />,
+      category: 'wellbeing',
+      color: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400',
+      onClick: () => setSelectedTool('pomodoro-timer')
+    },
+    {
+      id: 'reflection-generator',
+      name: 'Gerador de Reflexões',
+      description: 'Frases inspiradoras e análises motivacionais',
+      icon: <Quote size={24} />,
+      category: 'wellbeing',
+      color: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
+      onClick: () => setSelectedTool('reflection-generator')
     }
   ];
 
   const categories = [
     { id: 'productivity', name: 'Produtividade', icon: <Zap size={20} /> },
     { id: 'creative', name: 'Criativo', icon: <Palette size={20} /> },
-    { id: 'analysis', name: 'Análise', icon: <Brain size={20} /> }
+    { id: 'analysis', name: 'Análise', icon: <Brain size={20} /> },
+    { id: 'wellbeing', name: 'Bem-estar', icon: <Heart size={20} /> }
   ];
 
+  const renderToolContent = () => {
+    switch (selectedTool) {
+      case 'mood-tracker':
+        return <MoodTracker />;
+      case 'pomodoro-timer':
+        return <PomodoroTimer />;
+      case 'reflection-generator':
+        return <ReflectionGenerator />;
+      default:
+        return null;
+    }
+  };
+
+  const getToolTitle = () => {
+    const tool = tools.find(t => t.id === selectedTool);
+    return tool?.name || '';
+  };
+
   return (
+    <>
     <div className="space-y-8">
       <div>
         <h3 className="text-2xl font-serif font-semibold text-foreground mb-2">Ferramentas</h3>
@@ -159,6 +217,27 @@ const ToolsSection: React.FC = () => {
         );
       })}
     </div>
+
+    {/* Modal para ferramentas */}
+    <Dialog open={!!selectedTool} onOpenChange={() => setSelectedTool(null)}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            {getToolTitle()}
+            <button
+              onClick={() => setSelectedTool(null)}
+              className="p-1 hover:bg-muted rounded-full transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          {renderToolContent()}
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 };
 

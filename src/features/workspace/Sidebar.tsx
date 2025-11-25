@@ -102,13 +102,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, togg
           onClick={() => handleNavigation('calendar')} 
           isCollapsed={!isOpen}
         />
-        <NavItem 
-          icon={<Wrench size={20} />} 
-          label="Ferramentas" 
-          active={activeTab === 'tools'} 
-          onClick={() => handleNavigation('tools')} 
-          isCollapsed={!isOpen}
-        />
+
 
         {/* Seção Conversas (Expansível) */}
         {!isOpen ? (
