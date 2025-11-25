@@ -1,6 +1,7 @@
-export const formatRelativeDate = (date: Date): string => {
+export const formatRelativeDate = (date: Date | string): string => {
+  const dateObj = date instanceof Date ? date : new Date(date);
   const now = new Date();
-  const diffInMs = now.getTime() - date.getTime();
+  const diffInMs = now.getTime() - dateObj.getTime();
   const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
   const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
   const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
@@ -16,7 +17,7 @@ export const formatRelativeDate = (date: Date): string => {
   } else if (diffInDays < 7) {
     return `${diffInDays}d`;
   } else {
-    return date.toLocaleDateString('pt-BR', { 
+    return dateObj.toLocaleDateString('pt-BR', { 
       day: '2-digit', 
       month: '2-digit' 
     });

@@ -11,7 +11,8 @@ import {
   ChevronDown,
   History,
   Trash2,
-  MoreHorizontal
+  MoreHorizontal,
+  Wrench
 } from 'lucide-react';
 import NavItem from './NavItem';
 import { cn } from '@/shared/utils';
@@ -101,6 +102,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, togg
           onClick={() => handleNavigation('calendar')} 
           isCollapsed={!isOpen}
         />
+        <NavItem 
+          icon={<Wrench size={20} />} 
+          label="Ferramentas" 
+          active={activeTab === 'tools'} 
+          onClick={() => handleNavigation('tools')} 
+          isCollapsed={!isOpen}
+        />
 
         {/* Seção Conversas (Expansível) */}
         {!isOpen ? (
@@ -165,7 +173,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, togg
                             {chat.title}
                           </div>
                           <div className="text-[10px] opacity-60">
-                            {formatRelativeDate(chat.updatedAt)}
+                            {formatRelativeDate(chat.createdAt)}
                           </div>
                         </div>
                       </button>

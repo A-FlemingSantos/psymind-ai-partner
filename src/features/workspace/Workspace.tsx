@@ -23,13 +23,14 @@ import { Project } from '@/shared/types/workspace';
 import { cn } from '@/shared/utils/utils';
 import { useChat } from '@/features/chat';
 import { useChatSummary } from '@/features/chat/useChatSummary';
+import { ToolsSection } from '@/features/tools';
 import { useTheme } from 'next-themes';
 
 const Workspace: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>(() => {
     const saved = localStorage.getItem('activeTab');
-    return saved && ['dashboard', 'projects', 'conversations'].includes(saved) ? saved : 'dashboard';
+    return saved && ['dashboard', 'projects', 'conversations', 'tools'].includes(saved) ? saved : 'dashboard';
   });
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
@@ -86,7 +87,7 @@ const Workspace: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (!['dashboard', 'projects', 'conversations'].includes(activeTab)) {
+    if (!['dashboard', 'projects', 'conversations', 'tools'].includes(activeTab)) {
       setActiveTab('dashboard');
       localStorage.setItem('activeTab', 'dashboard');
     }
@@ -466,10 +467,18 @@ const Workspace: React.FC = () => {
             </div>
           </div>
 
-          {/* Seções de Conteúdo Principal (Cadernos e Foco) */}
+          {/* Seções de Conteúdo Principal */}
           <div className="grid grid-cols-1 gap-12 items-start w-full snap-start scroll-mt-28">
 
+            {/* Seção de Ferramentas */}
+            {activeTab === 'tools' && (
+              <div className="w-full animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
+                <ToolsSection />
+              </div>
+            )}
+
             {/* Seção Superior: Cadernos */}
+            {(activeTab === 'dashboard' || activeTab === 'projects') && (
             <div className="w-full space-y-8 min-w-0 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
@@ -521,8 +530,10 @@ const Workspace: React.FC = () => {
                 </div>
               </div>
             </div>
+            )}
 
             {/* Seção Inferior: Foco de Hoje */}
+            {activeTab === 'dashboard' && (
             <div className="w-full animate-in fade-in slide-in-from-bottom-8 duration-700 delay-700">
               <div className="flex items-center justify-between mb-8 h-[52px]">
                 <h3 className="text-2xl font-serif font-semibold text-foreground">Foco de Hoje</h3>
@@ -573,6 +584,7 @@ const Workspace: React.FC = () => {
                 </div>
               </div>
             </div>
+            )}
 
           </div>
         </div>
