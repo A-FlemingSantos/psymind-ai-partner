@@ -76,7 +76,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, togg
       </button>
 
       {/* Navigation Items */}
-      <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto no-scrollbar">
+      <nav className="flex-1 px-3 py-4 space-y-2 overflow-y-auto scrollbar-thin">
         <NavItem 
           icon={<Layout size={20} />} 
           label="Dashboard" 
@@ -137,7 +137,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, togg
 
             {/* Lista de Histórico */}
             {isHistoryOpen && (
-              <div className="flex flex-col gap-1 pl-4 animate-in slide-in-from-top-2 duration-200 max-h-60 overflow-y-auto custom-scrollbar">
+              <div className="flex flex-col gap-1 pl-4 animate-in slide-in-from-top-2 duration-200 max-h-60 overflow-y-auto scrollbar-thin">
                 {conversations.length === 0 ? (
                   <p className="text-xs text-zinc-500 px-4 py-2 italic">Nenhuma conversa ainda.</p>
                 ) : (

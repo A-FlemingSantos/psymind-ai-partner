@@ -119,14 +119,14 @@ const SettingsModal = ({ open, onOpenChange, defaultTab = "profile" }: SettingsM
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[90vh] w-[95vw] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="text-2xl font-serif">Configurações</DialogTitle>
         </DialogHeader>
         
         <div className="overflow-y-auto pr-2">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-1">
               <TabsTrigger value="profile" className="gap-2">
                 <User className="w-4 h-4" />
                 Perfil

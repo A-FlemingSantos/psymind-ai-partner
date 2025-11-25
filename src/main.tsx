@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import "./shared/styles/globals.css";
 import { ChatProvider } from "@/features/chat";
 import { ThemeProvider } from "next-themes";
 

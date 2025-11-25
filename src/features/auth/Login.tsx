@@ -67,13 +67,13 @@ const Login = () => {
             </div>
 
             <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2 text-muted-foreground cursor-pointer">
-                <input type="checkbox" className="rounded border-border text-orange-500 focus:ring-orange-500" />
+              <label className="flex items-center gap-2 text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
+                <input type="checkbox" className="rounded border-border text-orange-500 focus:ring-orange-500 focus:ring-2" />
                 Lembrar-me
               </label>
-              <a href="#" className="text-orange-500 hover:text-orange-600 font-medium">
+              <button type="button" className="text-orange-500 hover:text-orange-600 font-medium transition-colors">
                 Esqueceu a senha?
-              </a>
+              </button>
             </div>
 
             <Button 
