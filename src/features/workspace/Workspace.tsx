@@ -268,7 +268,15 @@ const Workspace: React.FC = () => {
         {/* Container do Conteúdo */}
         <div className="p-8 max-w-[1600px] mx-auto">
 
+          {/* Seção de Ferramentas */}
+          {activeTab === 'tools' && (
+            <div className="w-full animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
+              <ToolsSection />
+            </div>
+          )}
+
           {/* Hero / Mensagem Central */}
+          {activeTab !== 'tools' && (
           <div className="flex flex-col items-center justify-start pt-6 min-h-[85vh] mb-12 animate-in slide-in-from-bottom-4 duration-700 snap-start scroll-mt-28">
             <FlowerDoodle />
             <h1 className="text-4xl md:text-6xl font-serif text-foreground mt-8 mb-4 tracking-tight text-center">
@@ -466,16 +474,11 @@ const Workspace: React.FC = () => {
               </svg>
             </div>
           </div>
+          )}
 
           {/* Seções de Conteúdo Principal */}
+          {activeTab !== 'tools' && (
           <div className="grid grid-cols-1 gap-12 items-start w-full snap-start scroll-mt-28">
-
-            {/* Seção de Ferramentas */}
-            {activeTab === 'tools' && (
-              <div className="w-full animate-in fade-in slide-in-from-bottom-8 duration-700 delay-500">
-                <ToolsSection />
-              </div>
-            )}
 
             {/* Seção Superior: Cadernos */}
             {(activeTab === 'dashboard' || activeTab === 'projects') && (
@@ -587,6 +590,7 @@ const Workspace: React.FC = () => {
             )}
 
           </div>
+          )}
         </div>
       </main>
 

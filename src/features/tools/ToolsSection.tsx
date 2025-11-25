@@ -2,13 +2,6 @@ import React, { useState } from 'react';
 import { 
   FileText, 
   Calculator, 
-  Calendar, 
-  Image, 
-  Music, 
-  Video, 
-  FileSpreadsheet,
-  Code,
-  Palette,
   Brain,
   Zap,
   Heart,
@@ -16,35 +9,34 @@ import {
   Quote,
   X
 } from 'lucide-react';
+import { usePomodoro } from './PomodoroContext';
 import { cn } from '@/shared/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/shared/components/ui/dialog';
 import MoodTracker from './MoodTracker';
 import PomodoroTimer from './PomodoroTimer';
 import ReflectionGenerator from './ReflectionGenerator';
+import StudyPlanner from './StudyPlanner';
+import NoteTaker from './NoteTaker';
+import FlashcardMaker from './FlashcardMaker';
+import CalculatorTool from './Calculator';
+import KindnessTracker from './KindnessTracker';
+import ExamPrep from './ExamPrep';
 
 interface Tool {
   id: string;
   name: string;
   description: string;
   icon: React.ReactNode;
-  category: 'productivity' | 'creative' | 'analysis' | 'wellbeing';
+  category: 'productivity' | 'analysis' | 'wellbeing';
   color: string;
   onClick: () => void;
 }
 
 const ToolsSection: React.FC = () => {
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
+  const { formatTime, timeLeft, isActive } = usePomodoro();
 
   const tools: Tool[] = [
-    {
-      id: 'text-editor',
-      name: 'Editor de Texto',
-      description: 'Editor avançado com IA integrada',
-      icon: <FileText size={24} />,
-      category: 'productivity',
-      color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
-      onClick: () => window.open('/editor', '_blank')
-    },
     {
       id: 'calculator',
       name: 'Calculadora',
@@ -52,72 +44,35 @@ const ToolsSection: React.FC = () => {
       icon: <Calculator size={24} />,
       category: 'productivity',
       color: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
-      onClick: () => console.log('Calculadora')
+      onClick: () => setSelectedTool('calculator')
     },
     {
-      id: 'calendar-tool',
-      name: 'Calendário',
-      description: 'Gerenciamento de tarefas e eventos',
-      icon: <Calendar size={24} />,
+      id: 'study-planner',
+      name: 'Planejador de Estudos',
+      description: 'Organize suas tarefas e sessões de estudo',
+      icon: <Brain size={24} />,
       category: 'productivity',
-      color: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400',
-      onClick: () => window.open('/calendar', '_blank')
+      color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
+      onClick: () => setSelectedTool('study-planner')
     },
     {
-      id: 'image-viewer',
-      name: 'Visualizador de Imagens',
-      description: 'Visualize e edite imagens',
-      icon: <Image size={24} />,
-      category: 'creative',
-      color: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
-      onClick: () => console.log('Visualizador de Imagens')
+      id: 'note-taker',
+      name: 'Bloco de Notas',
+      description: 'Crie e gerencie suas anotações de estudo',
+      icon: <FileText size={24} />,
+      category: 'productivity',
+      color: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400',
+      onClick: () => setSelectedTool('note-taker')
     },
     {
-      id: 'audio-player',
-      name: 'Player de Áudio',
-      description: 'Reproduza arquivos de áudio',
-      icon: <Music size={24} />,
-      category: 'creative',
-      color: 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400',
-      onClick: () => console.log('Player de Áudio')
-    },
-    {
-      id: 'video-player',
-      name: 'Player de Vídeo',
-      description: 'Reproduza arquivos de vídeo',
-      icon: <Video size={24} />,
-      category: 'creative',
-      color: 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',
-      onClick: () => console.log('Player de Vídeo')
-    },
-    {
-      id: 'spreadsheet',
-      name: 'Planilhas',
-      description: 'Análise de dados e planilhas',
-      icon: <FileSpreadsheet size={24} />,
+      id: 'flashcard-maker',
+      name: 'Criador de Flashcards',
+      description: 'Crie flashcards para memorização eficiente',
+      icon: <Brain size={24} />,
       category: 'analysis',
-      color: 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400',
-      onClick: () => console.log('Planilhas')
+      color: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
+      onClick: () => setSelectedTool('flashcard-maker')
     },
-    {
-      id: 'code-editor',
-      name: 'Editor de Código',
-      description: 'Editor para desenvolvimento',
-      icon: <Code size={24} />,
-      category: 'productivity',
-      color: 'bg-slate-50 dark:bg-slate-900/20 text-slate-600 dark:text-slate-400',
-      onClick: () => console.log('Editor de Código')
-    },
-    {
-      id: 'design-tool',
-      name: 'Ferramenta de Design',
-      description: 'Criação e edição visual',
-      icon: <Palette size={24} />,
-      category: 'creative',
-      color: 'bg-violet-50 dark:bg-violet-900/20 text-violet-600 dark:text-violet-400',
-      onClick: () => console.log('Ferramenta de Design')
-    },
-    // Ferramentas PsyMindAI
     {
       id: 'mood-tracker',
       name: 'Rastreador de Humor',
@@ -130,8 +85,8 @@ const ToolsSection: React.FC = () => {
     {
       id: 'pomodoro-timer',
       name: 'Timer Pomodoro',
-      description: 'Técnica de produtividade com dicas de IA',
-      icon: <Clock size={24} />,
+      description: `Técnica de produtividade com dicas de IA - ${formatTime(timeLeft)}`,
+      icon: <Clock size={24} className={isActive ? 'animate-pulse' : ''} />,
       category: 'wellbeing',
       color: 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400',
       onClick: () => setSelectedTool('pomodoro-timer')
@@ -144,12 +99,29 @@ const ToolsSection: React.FC = () => {
       category: 'wellbeing',
       color: 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400',
       onClick: () => setSelectedTool('reflection-generator')
+    },
+    {
+      id: 'kindness-tracker',
+      name: 'Atos de Bondade',
+      description: 'Pratique gentileza e melhore seu bem-estar',
+      icon: <Heart size={24} />,
+      category: 'wellbeing',
+      color: 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400',
+      onClick: () => setSelectedTool('kindness-tracker')
+    },
+    {
+      id: 'exam-prep',
+      name: 'Preparatório Vestibulares',
+      description: 'Estude para ENEM, FUVEST e outros vestibulares',
+      icon: <Brain size={24} />,
+      category: 'analysis',
+      color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
+      onClick: () => setSelectedTool('exam-prep')
     }
   ];
 
   const categories = [
     { id: 'productivity', name: 'Produtividade', icon: <Zap size={20} /> },
-    { id: 'creative', name: 'Criativo', icon: <Palette size={20} /> },
     { id: 'analysis', name: 'Análise', icon: <Brain size={20} /> },
     { id: 'wellbeing', name: 'Bem-estar', icon: <Heart size={20} /> }
   ];
@@ -162,6 +134,18 @@ const ToolsSection: React.FC = () => {
         return <PomodoroTimer />;
       case 'reflection-generator':
         return <ReflectionGenerator />;
+      case 'study-planner':
+        return <StudyPlanner />;
+      case 'note-taker':
+        return <NoteTaker />;
+      case 'flashcard-maker':
+        return <FlashcardMaker />;
+      case 'calculator':
+        return <CalculatorTool />;
+      case 'kindness-tracker':
+        return <KindnessTracker />;
+      case 'exam-prep':
+        return <ExamPrep />;
       default:
         return null;
     }
@@ -220,8 +204,8 @@ const ToolsSection: React.FC = () => {
 
     {/* Modal para ferramentas */}
     <Dialog open={!!selectedTool} onOpenChange={() => setSelectedTool(null)}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col items-center">
+        <DialogHeader className="w-full">
           <DialogTitle className="flex items-center justify-between">
             {getToolTitle()}
             <button
@@ -232,7 +216,7 @@ const ToolsSection: React.FC = () => {
             </button>
           </DialogTitle>
         </DialogHeader>
-        <div className="py-4">
+        <div className="py-4 flex justify-center w-full">
           {renderToolContent()}
         </div>
       </DialogContent>

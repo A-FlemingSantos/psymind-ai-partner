@@ -4,6 +4,7 @@ import { TooltipProvider } from "./shared/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SettingsProvider } from "./features/settings";
+import { PomodoroProvider } from "./features/tools/PomodoroContext";
 import Index from "./pages/Index";
 import { Login, Register } from "./features/auth";
 import NotFound from "./pages/NotFound";
@@ -18,6 +19,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <SettingsProvider>
+        <PomodoroProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -35,6 +37,7 @@ const App = () => (
             </Routes>
           </main>
         </BrowserRouter>
+        </PomodoroProvider>
       </SettingsProvider>
     </TooltipProvider>
   </QueryClientProvider>

@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Play, Pause, RotateCcw, Clock, Lightbulb } from 'lucide-react';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { generatePomodoroTip } from '@/shared/services';
+import { usePomodoro } from './PomodoroContext';
 
 const PomodoroTimer: React.FC = () => {
-  const [timeLeft, setTimeLeft] = useState(25 * 60); // 25 minutos em segundos
-  const [isActive, setIsActive] = useState(false);
-  const [mode, setMode] = useState<'focus' | 'short' | 'long'>('focus');
+  const { timeLeft, isActive, mode, formatTime, toggleTimer, resetTimer, switchMode } = usePomodoro();
   const [tip, setTip] = useState<string>('');
   const [loadingTip, setLoadingTip] = useState(false);
+  const [sessionCount, setSessionCount] = useState(0);
 
   const modes = {
     focus: { duration: 25 * 60, label: 'Foco', color: 'text-red-500' },
@@ -17,36 +17,8 @@ const PomodoroTimer: React.FC = () => {
     long: { duration: 15 * 60, label: 'Pausa Longa', color: 'text-blue-500' }
   };
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
-    
-    if (isActive && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft(timeLeft => timeLeft - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      setIsActive(false);
-      // Aqui poderia tocar um som ou mostrar notificação
-    }
-    
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isActive, timeLeft]);
-
-  const toggleTimer = () => {
-    setIsActive(!isActive);
-  };
-
-  const resetTimer = () => {
-    setIsActive(false);
-    setTimeLeft(modes[mode].duration);
-  };
-
-  const switchMode = (newMode: 'focus' | 'short' | 'long') => {
-    setMode(newMode);
-    setIsActive(false);
-    setTimeLeft(modes[newMode].duration);
+  const handleSwitchMode = (newMode: 'focus' | 'short' | 'long') => {
+    switchMode(newMode);
     setTip('');
   };
 
@@ -62,11 +34,7 @@ const PomodoroTimer: React.FC = () => {
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+
 
   return (
     <Card className="w-full max-w-md">
@@ -83,6 +51,11 @@ const PomodoroTimer: React.FC = () => {
           </div>
           <div className="text-lg font-medium text-muted-foreground mb-4">
             {modes[mode].label}
+            {mode === 'focus' && sessionCount > 0 && (
+              <span className="ml-2 text-sm bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-1 rounded-full">
+                Sessão #{sessionCount + (isActive ? 1 : 0)}
+              </span>
+            )}
           </div>
         </div>
 
@@ -108,7 +81,7 @@ const PomodoroTimer: React.FC = () => {
           {Object.entries(modes).map(([key, modeData]) => (
             <Button
               key={key}
-              onClick={() => switchMode(key as 'focus' | 'short' | 'long')}
+              onClick={() => handleSwitchMode(key as 'focus' | 'short' | 'long')}
               variant={mode === key ? 'default' : 'outline'}
               size="sm"
             >
@@ -117,7 +90,7 @@ const PomodoroTimer: React.FC = () => {
           ))}
         </div>
 
-        <div className="text-center">
+        <div className="flex flex-col items-center">
           <Button
             onClick={getTip}
             disabled={loadingTip}
@@ -131,7 +104,7 @@ const PomodoroTimer: React.FC = () => {
           
           {tip && (
             <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">{tip}</p>
+              <p className="text-sm text-yellow-800 dark:text-yellow-200" dangerouslySetInnerHTML={{ __html: tip.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>') }} />
             </div>
           )}
         </div>

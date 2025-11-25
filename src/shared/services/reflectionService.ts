@@ -2,7 +2,7 @@ import { sendMessage } from './chatService';
 
 export async function generateReflection(category: string | null = null) {
   const categoryPrompt = category ? `sobre ${category}` : 'motivacional para estudantes';
-  const prompt = `Gere uma frase inspiradora ${categoryPrompt} (máximo 2 linhas) e indique o autor (pode ser um pensador, cientista ou frase original sua como "PsyMind.AI"). Formato: "Frase" - Autor`;
+  const prompt = `Gere apenas uma frase inspiradora ${categoryPrompt} (máximo 2 linhas) com autor. Formato: "Frase" - Autor. Sem introduções.`;
   
   const result = await sendMessage(prompt, []);
   
@@ -20,7 +20,7 @@ export async function generateReflection(category: string | null = null) {
 }
 
 export async function generateReflectionAnalysis(reflection: { text: string; author: string }) {
-  const prompt = `Sobre a frase "${reflection.text}" de ${reflection.author}, escreva uma breve reflexão (2-3 frases) de como um estudante pode aplicar isso no dia a dia.`;
+  const prompt = `Frase: "${reflection.text}" - ${reflection.author}. Gere apenas aplicação prática direta (2-3 frases) para estudantes. Sem introduções.`;
   
   const result = await sendMessage(prompt, []);
   return result.success ? result.text : result.userMessage || '⚠️ Não foi possível gerar reflexão no momento.';
