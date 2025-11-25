@@ -414,11 +414,12 @@ const Workspace: React.FC = () => {
                       
                       <button 
                         onClick={handleStartChat}
-                        className="p-2 bg-zinc-800 dark:bg-zinc-200 text-orange-50 dark:text-zinc-900 rounded-xl hover:bg-zinc-700 dark:hover:bg-zinc-300 transition-colors disabled:opacity-50"
+                        className="p-2 bg-zinc-800 dark:bg-zinc-200 text-orange-50 dark:text-zinc-900 rounded-xl hover:bg-zinc-700 dark:hover:bg-zinc-300 transition-all disabled:opacity-50 hover-lift disabled:cursor-not-allowed"
                         disabled={!chatInput.trim()}
                         title="Enviar"
+                        aria-label="Enviar mensagem"
                       >
-                        <ArrowUp size={18} />
+                        <ArrowUp size={18} className="transition-transform duration-300 group-hover:-translate-y-0.5" />
                       </button>
                     </div>
                   </div>
@@ -444,7 +445,8 @@ const Workspace: React.FC = () => {
                     setChatInput(suggestion.text);
                     setSelectedMode(suggestion.mode as 'Advisor' | 'Planner');
                   }}
-                  className="p-4 text-left bg-card/40 hover:bg-card border border-orange-100/50 dark:border-orange-900/20 hover:border-orange-200 dark:hover:border-orange-800 rounded-2xl transition-all duration-200 text-muted-foreground hover:text-foreground text-sm font-medium hover:shadow-md hover:-translate-y-0.5 flex flex-col gap-1 group"
+                  className="p-4 text-left bg-card/40 hover:bg-card border border-orange-100/50 dark:border-orange-900/20 hover:border-orange-200 dark:hover:border-orange-800 rounded-2xl transition-all duration-300 text-muted-foreground hover:text-foreground text-sm font-medium hover:shadow-lg hover:-translate-y-1 hover-lift flex flex-col gap-1 group stagger-item"
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <span className="text-xs font-semibold text-orange-400 uppercase tracking-wide group-hover:text-orange-500 transition-colors">
                     {getModeTranslation(suggestion.mode)}
@@ -503,9 +505,10 @@ const Workspace: React.FC = () => {
 
                 <button
                   onClick={() => setIsModalOpen(true)}
-                  className="group flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-full hover:opacity-90 transition-all shadow-lg shadow-zinc-900/20 hover:shadow-xl hover:shadow-zinc-900/30 hover:-translate-y-0.5"
+                  className="group flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-full hover:opacity-90 transition-all shadow-lg shadow-zinc-900/20 hover:shadow-xl hover:shadow-zinc-900/30 hover-lift focus-ring"
+                  aria-label="Criar novo caderno"
                 >
-                  <Plus size={18} />
+                  <Plus size={18} className="transition-transform duration-300 group-hover:rotate-90" />
                   <span className="font-medium">Novo Caderno</span>
                 </button>
               </div>
@@ -513,8 +516,8 @@ const Workspace: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-8">
                 {projects
                   .filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()))
-                  .map(project => (
-                  <div key={project.id} className="h-full">
+                  .map((project, index) => (
+                  <div key={project.id} className="h-full stagger-item animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
                     <ProjectCard project={project} />
                   </div>
                 ))}

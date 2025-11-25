@@ -439,7 +439,7 @@ const ExamPrep: React.FC = () => {
 
   if (!selectedCategory) {
     return (
-      <Card className="w-full max-w-4xl">
+      <Card className="w-full max-w-4xl animate-fade-in">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <GraduationCap className="text-blue-500" size={24} />
@@ -448,14 +448,15 @@ const ExamPrep: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.map((cat) => (
+            {categories.map((cat, index) => (
               <Button
                 key={cat.id}
                 variant="outline"
-                className="h-24 flex flex-col items-center gap-2 hover:bg-accent"
+                className="h-24 flex flex-col items-center gap-2 hover:bg-accent hover-lift stagger-item"
+                style={{ animationDelay: `${index * 0.1}s` }}
                 onClick={() => setSelectedCategory(cat.id)}
               >
-                <span className="text-2xl">{cat.icon}</span>
+                <span className="text-2xl transition-transform duration-300 group-hover:scale-110">{cat.icon}</span>
                 <span className="font-medium">{cat.title}</span>
               </Button>
             ))}
@@ -468,10 +469,15 @@ const ExamPrep: React.FC = () => {
   if (!selectedExam) {
     const categoryData = categories.find(c => c.id === selectedCategory);
     return (
-      <Card className="w-full max-w-4xl">
+      <Card className="w-full max-w-4xl animate-fade-in">
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setSelectedCategory(null)}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setSelectedCategory(null)}
+              className="hover-lift"
+            >
               <ArrowLeft size={16} />
             </Button>
             <CardTitle className="flex items-center gap-2">
@@ -486,7 +492,8 @@ const ExamPrep: React.FC = () => {
               <Button
                 key={index}
                 variant="outline"
-                className="w-full h-16 flex items-center justify-between p-4"
+                className="w-full h-16 flex items-center justify-between p-4 hover-lift stagger-item"
+                style={{ animationDelay: `${index * 0.05}s` }}
                 onClick={() => {
                   if (exam.isCalculator) {
                     setShowCalculator(true);
@@ -496,13 +503,17 @@ const ExamPrep: React.FC = () => {
                 }}
               >
                 <div className="flex items-center gap-3">
-                  <School className="text-blue-500" size={20} />
+                  <School className="text-blue-500 transition-transform duration-300 group-hover:scale-110" size={20} />
                   <div className="text-left">
                     <div className="font-medium">{exam.name}</div>
                     <div className="text-sm text-muted-foreground">{exam.fullName}</div>
                   </div>
                 </div>
-                {exam.isCalculator ? <Calculator size={20} /> : <Target size={20} />}
+                {exam.isCalculator ? (
+                  <Calculator size={20} className="transition-transform duration-300 group-hover:scale-110" />
+                ) : (
+                  <Target size={20} className="transition-transform duration-300 group-hover:scale-110" />
+                )}
               </Button>
             ))}
           </div>
@@ -574,10 +585,11 @@ const ExamPrep: React.FC = () => {
                 <Button
                   key={index}
                   variant="outline"
-                  className={`h-20 flex flex-col items-center gap-2 ${selectedExam.subjects.length % 3 !== 0 ? 'w-48' : ''} ${colorClass}`}
+                  className={`h-20 flex flex-col items-center gap-2 ${selectedExam.subjects.length % 3 !== 0 ? 'w-48' : ''} ${colorClass} hover-lift stagger-item`}
+                  style={{ animationDelay: `${index * 0.05}s` }}
                   onClick={() => setSelectedSubject(subject)}
                 >
-                  <IconComponent size={20} />
+                  <IconComponent size={20} className="transition-transform duration-300 group-hover:scale-110" />
                   <span className="text-sm text-center">{subject}</span>
                 </Button>
               );
@@ -667,9 +679,9 @@ ${plan}
                     console.error('Erro ao gerar plano de estudos:', error);
                   }
                 }}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 hover-lift"
               >
-                <Target size={16} />
+                <Target size={16} className="transition-transform duration-300 group-hover:scale-110" />
                 Plano de Estudos IA
               </Button>
               
@@ -741,7 +753,11 @@ Dê conselhos práticos e motivadores!`;
               {topics.map((topic, index) => {
                 const progress = studyProgress[topic] || 0;
                 return (
-                  <div key={index} className="p-4 bg-muted rounded-lg space-y-3">
+                  <div 
+                    key={index} 
+                    className="p-4 bg-muted rounded-lg space-y-3 hover:bg-accent/50 transition-colors stagger-item animate-fade-in"
+                    style={{ animationDelay: `${index * 0.05}s` }}
+                  >
                     <div className="flex items-center justify-between">
                       <span className="flex-1 font-medium">{topic}</span>
                       <div className="flex items-center gap-2">
@@ -760,8 +776,9 @@ ${explanation}
 💡 Continue estudando! Cada conceito dominado te aproxima do seu objetivo.`;
                             await sendMessageAndShowModal(prompt, `Plano de Estudos - ${selectedExam.name}`);
                           }}
+                          className="hover-lift"
                         >
-                          <BookOpen size={14} />
+                          <BookOpen size={14} className="transition-transform duration-300 group-hover:scale-110" />
                         </Button>
                         <Button
                           size="sm"
@@ -777,12 +794,13 @@ ${questions}
 🚀 Pratique regularmente! A repetição é a chave do sucesso.`;
                             await sendMessageAndShowModal(prompt, `Plano de Estudos - ${selectedExam.name}`);
                           }}
+                          className="hover-lift"
                         >
-                          <Target size={14} />
+                          <Target size={14} className="transition-transform duration-300 group-hover:scale-110" />
                         </Button>
                       </div>
                     </div>
-                    <Progress value={progress} className="w-full" />
+                    <Progress value={progress} className="w-full transition-all duration-500" />
                     <div className="flex justify-between items-center">
                       <div className="flex gap-2">
                         {[25, 50, 75, 100].map(val => (
@@ -791,15 +809,15 @@ ${questions}
                             size="sm"
                             variant={progress >= val ? "default" : "outline"}
                             onClick={() => updateProgress(topic, val)}
-                            className="text-xs"
+                            className="text-xs hover-lift transition-all"
                           >
                             {val === 25 ? '🟡' : val === 50 ? '🟠' : val === 75 ? '🔵' : '🟢'} {val}%
                           </Button>
                         ))}
                       </div>
                       {progress === 100 && (
-                        <div className="flex items-center gap-1 text-green-600">
-                          <CheckCircle size={16} />
+                        <div className="flex items-center gap-1 text-green-600 animate-fade-in">
+                          <CheckCircle size={16} className="animate-pulse-glow" />
                           <span className="text-xs font-medium">Concluído!</span>
                         </div>
                       )}
@@ -1285,38 +1303,41 @@ ${analysis}
       
       {/* Modal para exibir respostas da IA */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-fade-in">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
-              <span>{modalTitle}</span>
+              <span className="animate-fade-in">{modalTitle}</span>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsModalOpen(false)}
-                className="h-6 w-6"
+                className="h-6 w-6 hover-lift"
               >
                 <X className="h-4 w-4" />
               </Button>
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto pr-2">
+          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
             {isLoadingResponse ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-3 text-muted-foreground">Gerando resposta...</span>
+              <div className="flex flex-col items-center justify-center py-12 animate-fade-in">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                <span className="text-muted-foreground">Gerando resposta...</span>
+                <div className="mt-4 w-64 h-1 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-orange-500 rounded-full animate-shimmer" />
+                </div>
               </div>
             ) : (
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div className="prose prose-sm dark:prose-invert max-w-none animate-fade-in">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
                     // Estilização personalizada para markdown
-                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-6 mb-4" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="text-xl font-bold mt-5 mb-3" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="text-lg font-semibold mt-4 mb-2" {...props} />,
-                    p: ({node, ...props}) => <p className="mb-3 leading-relaxed" {...props} />,
-                    ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-1" {...props} />,
-                    ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-1" {...props} />,
+                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold mt-6 mb-4 animate-fade-in" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="text-xl font-bold mt-5 mb-3 animate-fade-in" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="text-lg font-semibold mt-4 mb-2 animate-fade-in" {...props} />,
+                    p: ({node, ...props}) => <p className="mb-3 leading-relaxed animate-fade-in" {...props} />,
+                    ul: ({node, ...props}) => <ul className="list-disc pl-6 mb-4 space-y-1 animate-fade-in" {...props} />,
+                    ol: ({node, ...props}) => <ol className="list-decimal pl-6 mb-4 space-y-1 animate-fade-in" {...props} />,
                     li: ({node, ...props}) => <li className="mb-1" {...props} />,
                     code: ({node, inline, ...props}: any) => 
                       inline ? (
@@ -1325,7 +1346,7 @@ ${analysis}
                         <code className="block bg-muted p-3 rounded-md text-sm font-mono overflow-x-auto mb-4" {...props} />
                       ),
                     blockquote: ({node, ...props}) => (
-                      <blockquote className="border-l-4 border-primary pl-4 italic my-4 text-muted-foreground" {...props} />
+                      <blockquote className="border-l-4 border-primary pl-4 italic my-4 text-muted-foreground animate-fade-in" {...props} />
                     ),
                     strong: ({node, ...props}) => <strong className="font-bold" {...props} />,
                     em: ({node, ...props}) => <em className="italic" {...props} />,

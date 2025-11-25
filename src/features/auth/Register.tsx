@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/ui/button";
 import { Input } from "@/shared/components/ui/input";
 import { Label } from "@/shared/components/ui/label";
-import { ArrowRight, Flower2 } from "lucide-react";
+import { ArrowRight, Flower2, Loader2, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/shared/hooks/use-toast";
 
 const Register = () => {
@@ -11,21 +11,71 @@ const Register = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{name?: string; email?: string; password?: string; confirmPassword?: string}>({});
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const validateForm = () => {
+    const newErrors: {name?: string; email?: string; password?: string; confirmPassword?: string} = {};
+    
+    if (!name.trim()) {
+      newErrors.name = "Nome é obrigatório";
+    }
+    
+    if (!email) {
+      newErrors.email = "Email é obrigatório";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Email inválido";
+    }
+    
+    if (!password) {
+      newErrors.password = "Senha é obrigatória";
+    } else if (password.length < 6) {
+      newErrors.password = "Senha deve ter pelo menos 6 caracteres";
+    }
+    
     if (password !== confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "As senhas não coincidem!"
-      });
+      newErrors.confirmPassword = "As senhas não coincidem";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      if (password !== confirmPassword) {
+        toast({
+          variant: "destructive",
+          title: "Erro",
+          description: "As senhas não coincidem!"
+        });
+      }
       return;
     }
+    
+    setIsLoading(true);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    toast({
+      title: "Conta criada!",
+      description: "Bem-vindo ao PsyMind",
+    });
+    
     navigate("/workspace");
   };
+
+  const passwordStrength = password.length > 0 ? (
+    password.length < 6 ? 'weak' :
+    password.length < 10 ? 'medium' : 'strong'
+  ) : null;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
@@ -59,10 +109,18 @@ const Register = () => {
                 type="text"
                 placeholder="João Silva"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="rounded-xl border-border focus:border-orange-500 focus:ring-orange-500 bg-background"
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (errors.name) setErrors({...errors, name: undefined});
+                }}
+                className={`rounded-xl border-border focus:border-orange-500 focus:ring-orange-500 bg-background transition-all ${
+                  errors.name ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                }`}
                 required
               />
+              {errors.name && (
+                <p className="text-sm text-red-500 animate-fade-in">{errors.name}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -72,38 +130,103 @@ const Register = () => {
                 type="email"
                 placeholder="seu@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="rounded-xl border-border focus:border-orange-500 focus:ring-orange-500 bg-background"
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors({...errors, email: undefined});
+                }}
+                className={`rounded-xl border-border focus:border-orange-500 focus:ring-orange-500 bg-background transition-all ${
+                  errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                }`}
                 required
               />
+              {errors.email && (
+                <p className="text-sm text-red-500 animate-fade-in">{errors.email}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="password" className="text-foreground font-medium">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="rounded-xl border-border focus:border-orange-500 focus:ring-orange-500 bg-background"
-                required
-                minLength={6}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password) setErrors({...errors, password: undefined});
+                  }}
+                  className={`rounded-xl border-border focus:border-orange-500 focus:ring-orange-500 bg-background pr-10 transition-all ${
+                    errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                  }`}
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {passwordStrength && (
+                <div className="flex items-center gap-2 text-xs">
+                  <div className={`flex-1 h-1.5 rounded-full ${
+                    passwordStrength === 'weak' ? 'bg-red-500' :
+                    passwordStrength === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                  }`} style={{ width: `${password.length * 10}%` }} />
+                  <span className={`${
+                    passwordStrength === 'weak' ? 'text-red-500' :
+                    passwordStrength === 'medium' ? 'text-yellow-500' : 'text-green-500'
+                  }`}>
+                    {passwordStrength === 'weak' ? 'Fraca' :
+                     passwordStrength === 'medium' ? 'Média' : 'Forte'}
+                  </span>
+                </div>
+              )}
+              {errors.password && (
+                <p className="text-sm text-red-500 animate-fade-in">{errors.password}</p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="confirmPassword" className="text-foreground font-medium">Confirmar senha</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="rounded-xl border-border focus:border-orange-500 focus:ring-orange-500 bg-background"
-                required
-                minLength={6}
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (errors.confirmPassword) setErrors({...errors, confirmPassword: undefined});
+                  }}
+                  className={`rounded-xl border-border focus:border-orange-500 focus:ring-orange-500 bg-background pr-10 transition-all ${
+                    errors.confirmPassword ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''
+                  } ${
+                    confirmPassword && password === confirmPassword && !errors.confirmPassword
+                      ? 'border-green-500 focus:border-green-500' : ''
+                  }`}
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label={showConfirmPassword ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+                {confirmPassword && password === confirmPassword && !errors.confirmPassword && (
+                  <CheckCircle2 className="absolute right-10 top-1/2 -translate-y-1/2 text-green-500" size={18} />
+                )}
+              </div>
+              {errors.confirmPassword && (
+                <p className="text-sm text-red-500 animate-fade-in">{errors.confirmPassword}</p>
+              )}
             </div>
 
             <div className="flex items-start gap-2 text-sm text-muted-foreground">
@@ -126,9 +249,19 @@ const Register = () => {
 
             <Button 
               type="submit" 
-              className="w-full bg-foreground hover:opacity-90 text-background rounded-full py-6 text-base font-medium transition-all flex items-center justify-center gap-2"
+              disabled={isLoading}
+              className="w-full bg-foreground hover:opacity-90 text-background rounded-full py-6 text-base font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed hover-lift"
             >
-              Criar conta <ArrowRight className="w-4 h-4" />
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Criando conta...
+                </>
+              ) : (
+                <>
+                  Criar conta <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </Button>
           </form>
 

@@ -55,8 +55,8 @@ const Index = () => {
           </a>
           
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
-            <a href="#funcionalidades" className="hover:text-orange-500 transition-colors">Como funciona</a>
-            <a href="#filosofia" className="hover:text-orange-500 transition-colors">Filosofia</a>
+            <a href="#funcionalidades" className="hover:text-orange-500 transition-colors focus-ring rounded-md px-2 py-1">Como funciona</a>
+            <a href="#filosofia" className="hover:text-orange-500 transition-colors focus-ring rounded-md px-2 py-1">Filosofia</a>
             
             {/* Theme Toggle */}
             <button 
@@ -67,7 +67,7 @@ const Index = () => {
               <Moon size={20} className="absolute inset-2 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             </button>
 
-            <Link to="/login" className="hover:text-orange-500 transition-colors">Login</Link>
+            <Link to="/login" className="hover:text-orange-500 transition-colors focus-ring rounded-md px-2 py-1">Login</Link>
             <Link to="/register">
               <Button className="bg-foreground text-background hover:opacity-90 rounded-full px-5 py-2.5 transition-all transform hover:scale-105">
                 Começar Agora
@@ -135,12 +135,12 @@ const Index = () => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center reveal active" style={{ transitionDelay: '0.4s' }}>
             <Link to="/register">
-              <Button className="bg-foreground text-background hover:opacity-90 px-8 py-4 rounded-full text-lg font-medium transition-all flex items-center gap-2">
-                Iniciar Conversa <ArrowRight className="w-4 h-4" />
+              <Button className="bg-foreground text-background hover:opacity-90 px-8 py-4 rounded-full text-lg font-medium transition-all flex items-center gap-2 hover-lift group">
+                Iniciar Conversa <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Button>
             </Link>
             <a href="#funcionalidades">
-              <Button variant="outline" className="px-8 py-4 rounded-full text-lg font-medium border-border hover:bg-accent text-foreground">
+              <Button variant="outline" className="px-8 py-4 rounded-full text-lg font-medium border-border hover:bg-accent text-foreground hover-lift">
                 Saiba Mais
               </Button>
             </a>
@@ -225,8 +225,8 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="p-8 rounded-3xl bg-secondary hover:bg-accent transition-colors duration-300 reveal" style={{ transitionDelay: '0.1s' }}>
-              <div className="w-12 h-12 bg-card rounded-2xl flex items-center justify-center mb-6 shadow-sm text-orange-500">
+            <div className="p-8 rounded-3xl bg-secondary hover:bg-accent transition-all duration-300 reveal hover-lift stagger-item" style={{ transitionDelay: '0.1s' }}>
+              <div className="w-12 h-12 bg-card rounded-2xl flex items-center justify-center mb-6 shadow-sm text-orange-500 transition-transform duration-300 group-hover:scale-110">
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <h3 className="font-serif text-2xl mb-3 text-foreground">Privacidade Total</h3>
@@ -235,8 +235,8 @@ const Index = () => {
               </p>
             </div>
 
-            <div className="p-8 rounded-3xl bg-secondary hover:bg-accent transition-colors duration-300 reveal" style={{ transitionDelay: '0.2s' }}>
-              <div className="w-12 h-12 bg-card rounded-2xl flex items-center justify-center mb-6 shadow-sm text-orange-500">
+            <div className="p-8 rounded-3xl bg-secondary hover:bg-accent transition-all duration-300 reveal hover-lift stagger-item" style={{ transitionDelay: '0.2s' }}>
+              <div className="w-12 h-12 bg-card rounded-2xl flex items-center justify-center mb-6 shadow-sm text-orange-500 transition-transform duration-300 group-hover:scale-110">
                 <Sparkles className="w-6 h-6" />
               </div>
               <h3 className="font-serif text-2xl mb-3 text-foreground">Insights Edificantes</h3>
@@ -245,8 +245,8 @@ const Index = () => {
               </p>
             </div>
 
-            <div className="p-8 rounded-3xl bg-secondary hover:bg-accent transition-colors duration-300 reveal" style={{ transitionDelay: '0.3s' }}>
-              <div className="w-12 h-12 bg-card rounded-2xl flex items-center justify-center mb-6 shadow-sm text-orange-500">
+            <div className="p-8 rounded-3xl bg-secondary hover:bg-accent transition-all duration-300 reveal hover-lift stagger-item" style={{ transitionDelay: '0.3s' }}>
+              <div className="w-12 h-12 bg-card rounded-2xl flex items-center justify-center mb-6 shadow-sm text-orange-500 transition-transform duration-300 group-hover:scale-110">
                 <Clock className="w-6 h-6" />
               </div>
               <h3 className="font-serif text-2xl mb-3 text-foreground">Sempre Disponível</h3>
@@ -278,8 +278,9 @@ const Index = () => {
           <h2 className="font-serif text-4xl mb-6 text-foreground">Pronto para organizar sua mente?</h2>
           <p className="text-muted-foreground mb-8">Junte-se a milhares de pessoas que encontraram clareza com o PsyMind.</p>
           <Link to="/register">
-            <Button className="bg-orange-500 hover:bg-orange-400 text-white px-10 py-4 rounded-full text-lg font-medium transition-all shadow-lg shadow-orange-500/30 transform hover:-translate-y-1">
+            <Button className="bg-orange-500 hover:bg-orange-400 text-white px-10 py-4 rounded-full text-lg font-medium transition-all shadow-lg shadow-orange-500/30 hover-lift group">
               Experimentar Gratuitamente
+              <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
             </Button>
           </Link>
           <p className="mt-4 text-sm text-muted-foreground">Não requer cartão de crédito • Cancelamento a qualquer momento</p>

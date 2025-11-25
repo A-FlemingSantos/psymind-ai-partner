@@ -226,14 +226,15 @@ const ToolsSection: React.FC = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {categoryTools.map(tool => (
+              {categoryTools.map((tool, index) => (
                 <button
                   key={tool.id}
                   onClick={tool.onClick}
-                  className="group p-6 bg-card rounded-2xl border border-border hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-200 text-left hover:shadow-md hover:-translate-y-0.5"
+                  className="group p-6 bg-card rounded-2xl border border-border hover:border-orange-200 dark:hover:border-orange-800 transition-all duration-300 text-left hover:shadow-lg hover:-translate-y-1 hover-lift stagger-item animate-fade-in"
+                  style={{ animationDelay: `${index * 0.05}s` }}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={cn("p-3 rounded-xl shrink-0", tool.color)}>
+                    <div className={cn("p-3 rounded-xl shrink-0 transition-transform duration-300 group-hover:scale-110", tool.color)}>
                       {tool.icon}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -255,19 +256,19 @@ const ToolsSection: React.FC = () => {
 
     {/* Modal para ferramentas */}
     <Dialog open={!!selectedTool} onOpenChange={() => setSelectedTool(null)}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col items-center">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col items-center animate-fade-in">
         <DialogHeader className="w-full">
           <DialogTitle className="flex items-center justify-between">
-            {getToolTitle()}
+            <span className="animate-fade-in">{getToolTitle()}</span>
             <button
               onClick={() => setSelectedTool(null)}
-              className="p-1 hover:bg-muted rounded-full transition-colors"
+              className="p-1 hover:bg-muted rounded-full transition-colors hover-lift"
             >
               <X size={20} />
             </button>
           </DialogTitle>
         </DialogHeader>
-        <div className="py-4 flex justify-center w-full">
+        <div className="py-4 flex justify-center w-full animate-fade-in">
           {renderToolContent()}
         </div>
       </DialogContent>
