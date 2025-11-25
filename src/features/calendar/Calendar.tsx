@@ -138,7 +138,7 @@ const CalendarPage: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-background font-sans text-foreground selection:bg-orange-200 overflow-hidden flex">
+    <div className="h-screen bg-background font-sans text-foreground selection:bg-orange-200 flex">
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={handleNavigate} 
@@ -147,7 +147,7 @@ const CalendarPage: React.FC = () => {
       />
 
       <main className={cn(
-        "flex-1 h-full flex flex-col transition-all duration-300 ease-in-out overflow-hidden",
+        "flex-1 h-full flex flex-col transition-all duration-300 ease-in-out",
         isSidebarOpen ? "md:ml-64" : "md:ml-20"
       )}>
         {/* Header */}
@@ -188,7 +188,7 @@ const CalendarPage: React.FC = () => {
 
         {/* Main Scrollable Area */}
         <div className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-[1600px] mx-auto h-full flex flex-col lg:flex-row gap-8">
+          <div className="max-w-[1600px] mx-auto flex flex-col lg:flex-row gap-8 min-h-full">
             
             {/* Left Column: Calendar & Summary */}
             <div className="lg:w-[400px] xl:w-[450px] flex-none flex flex-col gap-8">
@@ -243,7 +243,7 @@ const CalendarPage: React.FC = () => {
             </div>
 
             {/* Right Column: Tasks Timeline */}
-            <div className="flex-1 bg-card rounded-[2.5rem] border border-border shadow-xl shadow-orange-900/5 p-8 flex flex-col overflow-hidden">
+            <div className="flex-1 bg-card rounded-[2.5rem] border border-border shadow-xl shadow-orange-900/5 p-8 flex flex-col min-h-[600px]">
               <div className="flex justify-between items-center mb-6">
                 <div>
                   <h2 className="text-2xl font-serif font-bold text-foreground">Agenda</h2>

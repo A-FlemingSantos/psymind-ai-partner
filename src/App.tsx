@@ -13,6 +13,7 @@ import { Editor } from "./features/editor";
 
 const queryClient = new QueryClient();
 
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -20,17 +21,19 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/workspace" element={<Workspace />} />
-            <Route path="/calendar" element={<Calendar />} />
-            {/* New Route for Editor */}
-            <Route path="/editor" element={<Editor />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <main id="main-content" role="main" aria-label="Conteúdo principal">
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/workspace" element={<Workspace />} />
+              <Route path="/calendar" element={<Calendar />} />
+              {/* New Route for Editor */}
+              <Route path="/editor" element={<Editor />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </main>
         </BrowserRouter>
       </SettingsProvider>
     </TooltipProvider>

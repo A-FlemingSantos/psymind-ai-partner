@@ -47,7 +47,7 @@ const Index = () => {
         Pular para o conteúdo principal
       </a>
       {/* Navigation */}
-      <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-background/80 backdrop-blur-md shadow-sm' : 'bg-transparent'}`}>
+      <nav role="navigation" className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-background/80 backdrop-blur-md shadow-sm' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <a href="#" className="font-serif text-2xl font-semibold tracking-tight flex items-center gap-2 text-foreground">
             <div className="w-2 h-2 bg-foreground rounded-full"></div>
@@ -114,7 +114,7 @@ const Index = () => {
       {/* Hero Section */}
       <main id="main-content" className="relative min-h-screen flex flex-col justify-center items-center pt-20 pb-12 px-6 overflow-hidden">
         {/* SVG Flower Decoration */}
-        <div className="mb-8 opacity-80 animate-float">
+        <div className="mb-8 opacity-80 animate-float" aria-hidden="true">
           <svg width="80" height="120" viewBox="0 0 100 150" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M50 140C50 140 55 100 45 70" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-foreground"/>
             <path d="M50 110C40 105 30 115 50 120" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-foreground"/>

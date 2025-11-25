@@ -214,7 +214,7 @@ const Workspace: React.FC = () => {
 
   return (
     // CORRIGIDO: bg-[#FFFBF7] -> bg-background, text-zinc-900 -> text-foreground
-    <div className="h-screen bg-background font-sans text-foreground selection:bg-orange-200 overflow-hidden">
+    <div className="h-screen bg-background font-sans text-foreground selection:bg-orange-200 flex">
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
@@ -225,7 +225,7 @@ const Workspace: React.FC = () => {
       {/* Conteúdo Principal */}
       <main 
         className={cn(
-          "h-screen overflow-y-auto snap-y snap-proximity scroll-smooth transition-all duration-300 ease-in-out",
+          "flex-1 h-screen overflow-y-auto snap-y snap-proximity scroll-smooth transition-all duration-300 ease-in-out",
           isSidebarOpen ? "md:ml-64" : "md:ml-20"
         )}
       >
