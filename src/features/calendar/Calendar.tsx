@@ -7,19 +7,13 @@ import { Calendar } from "@/shared/components/ui/calendar";
 import { Sidebar, AddTaskModal } from '@/features/workspace';
 import { cn } from '@/shared/utils/utils';
 import { ptBR } from 'date-fns/locale';
-import { useTheme } from 'next-themes';
-
-// ... (Interfaces e Estados de Task mantidos iguais)
-// Mock Data Types
-interface Task {
-  id: string;
-  title: string;
-  time: string;
-  category: 'work' | 'personal' | 'health' | 'study';
-  description?: string;
-  completed: boolean;
-  date: Date;
-}
+// import { useTheme } from 'next-themes';
+import { useCalendarTasks, Task } from './hooks/useCalendarTasks';
+import TaskEditModal from './components/TaskEditModal';
+import CalendarStats from './components/CalendarStats';
+import TaskFilters from './components/TaskFilters';
+import TaskNotifications from './components/TaskNotifications';
+import StatsModal from './components/StatsModal';
 
 const CalendarPage: React.FC = () => {
   const [date, setDate] = useState<Date | undefined>(new Date());
@@ -29,31 +23,32 @@ const CalendarPage: React.FC = () => {
   });
   const [activeTab, setActiveTab] = useState<string>('calendar');
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showCompleted, setShowCompleted] = useState(true);
+  const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   
-  // Hook de tema
-  const { setTheme, theme } = useTheme();
-
-  // ... (Estado tasks e funções handlers mantidas iguais)
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: '1',
-      title: 'Reunião de Kickoff',
-      time: '09:00',
-      category: 'work',
-      description: 'Alinhamento do novo projeto PsyMind.',
-      completed: true,
-      date: new Date()
-    },
-    {
-      id: '2',
-      title: 'Yoga & Meditação',
-      time: '18:30',
-      category: 'health',
-      completed: false,
-      date: new Date()
-    }
-  ]);
+  // Hook de tema (simulado)
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  
+  const toggleTheme = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+  };
+  
+  // Hook personalizado para gerenciar tarefas
+  const { 
+    tasks,
+    addTask, 
+    updateTask, 
+    deleteTask, 
+    toggleTaskCompletion, 
+    getTasksForDate, 
+    searchTasks 
+  } = useCalendarTasks();
 
   React.useEffect(() => {
     setActiveTab('calendar');
@@ -67,18 +62,59 @@ const CalendarPage: React.FC = () => {
   const handleNavigate = (tab: string) => setActiveTab(tab);
   
   const handleAddTask = (newTask: any) => {
-    setTasks([...tasks, { ...newTask, id: Date.now().toString() }]);
+    addTask(newTask);
   };
 
-  const toggleTaskCompletion = (taskId: string) => {
-    setTasks(tasks.map(t => t.id === taskId ? { ...t, completed: !t.completed } : t));
+  const handleEditTask = (task: Task) => {
+    setSelectedTask(task);
+    setIsEditModalOpen(true);
   };
 
-  const filteredTasks = tasks.filter(task => {
-    const isSameDate = task.date.toDateString() === date?.toDateString();
-    const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return isSameDate && matchesSearch;
-  }).sort((a, b) => a.time.localeCompare(b.time));
+  // Listener para ações rápidas
+  React.useEffect(() => {
+    const handleQuickAdd = (event: CustomEvent) => {
+      addTask(event.detail);
+    };
+
+    window.addEventListener('quickAddTask', handleQuickAdd as EventListener);
+    return () => {
+      window.removeEventListener('quickAddTask', handleQuickAdd as EventListener);
+    };
+  }, [addTask]);
+
+  const handleCategoryToggle = (category: string) => {
+    setSelectedCategories(prev => 
+      prev.includes(category) 
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const handleClearFilters = () => {
+    setSelectedCategories([]);
+    setShowCompleted(true);
+    setSearchQuery('');
+  };
+
+  const filteredTasks = React.useMemo(() => {
+    let tasks = searchQuery 
+      ? searchTasks(searchQuery, date) 
+      : date 
+      ? getTasksForDate(date) 
+      : [];
+
+    // Filtrar por categorias
+    if (selectedCategories.length > 0) {
+      tasks = tasks.filter(task => selectedCategories.includes(task.category));
+    }
+
+    // Filtrar por status
+    if (!showCompleted) {
+      tasks = tasks.filter(task => !task.completed);
+    }
+
+    return tasks;
+  }, [searchQuery, date, selectedCategories, showCompleted, searchTasks, getTasksForDate]);
 
   const getCategoryColor = (category: string) => {
     // Ajustados para melhor visibilidade no dark mode
@@ -136,11 +172,10 @@ const CalendarPage: React.FC = () => {
 
               {/* Botão Tema */}
               <button 
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                onClick={toggleTheme}
                 className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-orange-200 transition-colors"
               >
-                <Sun size={18} className="rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon size={18} className="absolute rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                {theme === 'light' ? <Sun size={18} /> : <Moon size={18} />}
               </button>
 
               <button className="w-10 h-10 rounded-full bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-orange-500 hover:border-orange-200 transition-colors relative">
@@ -159,41 +194,57 @@ const CalendarPage: React.FC = () => {
             <div className="lg:w-[400px] xl:w-[450px] flex-none flex flex-col gap-8">
               {/* Calendar Card */}
               <div className="bg-card p-6 rounded-[2.5rem] shadow-xl shadow-orange-900/5 border border-border">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  className="rounded-md w-full"
-                  classNames={{
-                    head_cell: "text-muted-foreground font-normal text-[0.8rem] uppercase tracking-widest w-10",
-                    cell: "h-10 w-10 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                    day: "h-10 w-10 p-0 font-medium text-foreground aria-selected:opacity-100 hover:bg-accent hover:text-foreground rounded-full transition-colors",
-                    day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-full shadow-lg",
-                    day_today: "bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-orange-100 font-bold",
-                  }}
-                  locale={ptBR}
-                />
+                <div className="flex justify-center">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    className="rounded-md"
+                    classNames={{
+                      head_cell: "text-muted-foreground font-normal text-[0.8rem] uppercase tracking-widest w-10",
+                      cell: "h-10 w-10 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                      day: "h-10 w-10 p-0 font-medium text-foreground aria-selected:opacity-100 hover:bg-accent hover:text-foreground rounded-full transition-colors",
+                      day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground rounded-full shadow-lg",
+                      day_today: "bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-orange-100 font-bold",
+                    }}
+                    locale={ptBR}
+                  />
+                </div>
               </div>
 
-              {/* Daily Summary Card */}
-              <div className="bg-orange-50/50 dark:bg-card p-8 rounded-[2.5rem] border border-border flex-1 min-h-[200px] flex flex-col justify-center items-center text-center space-y-4">
-                <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center shadow-sm text-orange-400 mb-2">
-                  <CalendarIcon size={32} />
-                </div>
-                <div>
-                  <h3 className="font-serif text-2xl text-foreground">
-                    {date?.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}
-                  </h3>
-                  <p className="text-muted-foreground mt-2">
-                    {filteredTasks.length} tarefas agendadas para hoje.
-                  </p>
-                </div>
-              </div>
+
+              
+              {/* Statistics Card - Clicável */}
+              {date && (
+                <button
+                  onClick={() => setIsStatsModalOpen(true)}
+                  className="bg-orange-50/50 dark:bg-card p-8 rounded-[2.5rem] border border-border flex-1 min-h-[200px] flex flex-col justify-center items-center text-center space-y-4 hover:bg-orange-100/50 dark:hover:bg-card/80 transition-colors cursor-pointer"
+                >
+                  <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center shadow-sm text-orange-400 mb-2">
+                    <CalendarIcon size={32} />
+                  </div>
+                  <div>
+                    <h3 className="font-serif text-2xl text-foreground">
+                      {date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })}
+                    </h3>
+                    <p className="text-muted-foreground mt-2">
+                      {filteredTasks.length} tarefas agendadas para hoje.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1 opacity-70">
+                      Clique para ver estatísticas
+                    </p>
+                  </div>
+                </button>
+              )}
+              
+
+              
+
             </div>
 
             {/* Right Column: Tasks Timeline */}
             <div className="flex-1 bg-card rounded-[2.5rem] border border-border shadow-xl shadow-orange-900/5 p-8 flex flex-col overflow-hidden">
-              <div className="flex justify-between items-center mb-8">
+              <div className="flex justify-between items-center mb-6">
                 <div>
                   <h2 className="text-2xl font-serif font-bold text-foreground">Agenda</h2>
                   <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider mt-1">
@@ -208,12 +259,30 @@ const CalendarPage: React.FC = () => {
                   Nova Tarefa
                 </button>
               </div>
+              
+              {/* Filtros na Agenda */}
+              <div className="mb-6">
+                <TaskFilters
+                  selectedCategories={selectedCategories}
+                  onCategoryToggle={handleCategoryToggle}
+                  showCompleted={showCompleted}
+                  onToggleCompleted={() => setShowCompleted(!showCompleted)}
+                  onClearFilters={handleClearFilters}
+                />
+              </div>
 
               <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
                 {filteredTasks.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-4 opacity-60">
                     <CalendarIcon size={48} strokeWidth={1.5} />
-                    <p className="font-medium">Nenhuma tarefa para este dia.</p>
+                    <div className="text-center">
+                      <p className="font-medium mb-2">Nenhuma tarefa para este dia.</p>
+                      <p className="text-sm">
+                        {selectedCategories.length > 0 || !showCompleted 
+                          ? 'Tente ajustar os filtros ou' 
+                          : 'Que tal'} adicionar uma nova tarefa?
+                      </p>
+                    </div>
                   </div>
                 ) : (
                   filteredTasks.map((task) => (
@@ -244,7 +313,10 @@ const CalendarPage: React.FC = () => {
                           )}>
                             {task.title}
                           </h4>
-                          <button className="text-muted-foreground hover:text-foreground p-1">
+                          <button 
+                            onClick={() => handleEditTask(task)}
+                            className="text-muted-foreground hover:text-foreground p-1"
+                          >
                             <MoreHorizontal size={18} />
                           </button>
                         </div>
@@ -271,6 +343,16 @@ const CalendarPage: React.FC = () => {
                     </div>
                   ))
                 )}
+                
+                {filteredTasks.length > 0 && (
+                  <div className="mt-4 p-4 bg-muted/30 rounded-xl">
+                    <p className="text-xs text-muted-foreground text-center">
+                      Mostrando {filteredTasks.length} de {date ? getTasksForDate(date).length : 0} tarefas
+                      {selectedCategories.length > 0 && ` • Filtros: ${selectedCategories.length} categoria(s)`}
+                      {!showCompleted && ' • Apenas pendentes'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -278,11 +360,32 @@ const CalendarPage: React.FC = () => {
         </div>
       </main>
 
+      {/* Sistema de Notificações */}
+      <TaskNotifications tasks={tasks} />
+
       <AddTaskModal 
         isOpen={isTaskModalOpen}
         onClose={() => setIsTaskModalOpen(false)}
         onAddTask={handleAddTask}
         selectedDate={date}
+      />
+      
+      <TaskEditModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedTask(null);
+        }}
+        onUpdateTask={updateTask}
+        onDeleteTask={deleteTask}
+        task={selectedTask}
+      />
+      
+      <StatsModal
+        isOpen={isStatsModalOpen}
+        onClose={() => setIsStatsModalOpen(false)}
+        tasks={tasks}
+        selectedDate={date || new Date()}
       />
     </div>
   );
