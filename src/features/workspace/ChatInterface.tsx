@@ -8,11 +8,14 @@ import {
   Copy, 
   ThumbsUp, 
   RotateCcw, 
-  Loader2
+  Loader2,
+  Check
 } from 'lucide-react';
 import { cn } from '@/shared/utils/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
 import { sendMessageToGemini } from '@/shared/utils/gemini';
 import { useChat, Message } from '@/features/chat';
 
@@ -22,6 +25,54 @@ interface ChatInterfaceProps {
   personality: string;
   onClose: () => void;
 }
+
+// Componente para blocos de código com botão de copiar
+const CodeBlock: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className }) => {
+  const [copied, setCopied] = useState(false);
+  const codeRef = useRef<HTMLElement>(null);
+
+  // Extrai a linguagem da className (formato: language-javascript ou hljs language-javascript)
+  const language = className?.replace(/^(hljs\s+)?language-/, '') || 'text';
+  const displayLanguage = language === 'text' ? 'código' : language;
+
+  const handleCopy = () => {
+    if (codeRef.current) {
+      navigator.clipboard.writeText(codeRef.current.textContent || '');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <div className="relative group">
+      <div className="bg-zinc-800 text-zinc-400 text-xs font-medium px-3 py-2 rounded-t-xl border-b border-zinc-700 flex justify-between items-center">
+        <span>{displayLanguage}</span>
+      </div>
+      <pre className="bg-zinc-900 text-zinc-100 rounded-b-xl p-4 overflow-x-auto border border-zinc-700 border-t-0 m-0">
+        <code ref={codeRef} className={className}>
+          {children}
+        </code>
+      </pre>
+      <button
+        onClick={handleCopy}
+        className="absolute top-2 right-3 p-1.5 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-white rounded-md opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center gap-1 text-xs"
+        title="Copiar código"
+      >
+        {copied ? (
+          <>
+            <Check size={12} />
+            <span className="hidden sm:inline">Copiado!</span>
+          </>
+        ) : (
+          <>
+            <Copy size={12} />
+            <span className="hidden sm:inline">Copiar</span>
+          </>
+        )}
+      </button>
+    </div>
+  );
+};
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
   initialPrompt, 
@@ -231,13 +282,41 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                     : "px-5 py-3 rounded-2xl shadow-sm bg-orange-100/50 text-black-soft rounded-tr-none border border-orange-100"
                 )}>
                   {msg.role === 'ai' ? (
-                    <div className="prose prose-sm prose-zinc max-w-none prose-p:leading-relaxed prose-pre:bg-zinc-100 prose-pre:rounded-xl prose-headings:font-serif prose-headings:text-black-soft prose-a:text-orange-600 prose-strong:text-black-soft">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    <div className="prose prose-sm prose-zinc max-w-none prose-p:leading-relaxed prose-code:bg-zinc-200 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono prose-headings:font-serif prose-headings:text-black-soft prose-a:text-orange-600 prose-strong:text-black-soft">
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        rehypePlugins={[rehypeHighlight]}
+                        components={{
+                          pre: ({ children, ...props }) => {
+                            const child = React.Children.toArray(children)[0] as React.ReactElement;
+                            const className = child?.props?.className || '';
+                            return <CodeBlock className={className}>{children}</CodeBlock>;
+                          },
+                        }}
+                      >
                         {msg.content}
                       </ReactMarkdown>
                     </div>
                   ) : (
-                    <span className="whitespace-pre-wrap">{msg.content}</span>
+                    msg.content.includes('```') || msg.content.includes('`') ? (
+                      <div className="prose prose-sm max-w-none prose-code:bg-zinc-200 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono">
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeHighlight]}
+                          components={{
+                            pre: ({ children, ...props }) => {
+                              const child = React.Children.toArray(children)[0] as React.ReactElement;
+                              const className = child?.props?.className || '';
+                              return <CodeBlock className={className}>{children}</CodeBlock>;
+                            },
+                          }}
+                        >
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                    ) : (
+                      <span className="whitespace-pre-wrap">{msg.content}</span>
+                    )
                   )}
                   
                   <div className={cn(

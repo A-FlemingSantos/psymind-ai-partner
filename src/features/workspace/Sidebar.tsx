@@ -9,12 +9,15 @@ import {
   ChevronLeft, 
   ChevronRight,
   ChevronDown,
-  History
+  History,
+  Trash2,
+  MoreHorizontal
 } from 'lucide-react';
 import NavItem from './NavItem';
 import { cn } from '@/shared/utils';
 import { useChat } from '@/features/chat';
 import { useGlobalSettings } from '@/features/settings';
+import { formatRelativeDate } from '@/shared/utils/date-format';
 
 interface SidebarProps {
   activeTab: string;
@@ -26,7 +29,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, toggle }) => {
   const navigate = useNavigate();
   const [isHistoryOpen, setIsHistoryOpen] = useState(true); // Começa aberto para facilitar visualização
-  const { conversations, selectConversation, currentConversationId } = useChat();
+  const { conversations, selectConversation, currentConversationId, deleteConversation } = useChat();
   const { openSettings } = useGlobalSettings();
 
   const handleNavigation = (tab: string) => {
@@ -142,20 +145,46 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, togg
                   <p className="text-xs text-zinc-500 px-4 py-2 italic">Nenhuma conversa ainda.</p>
                 ) : (
                   conversations.map((chat) => (
-                    <button
+                    <div
                       key={chat.id}
-                      onClick={() => handleConversationClick(chat.id)}
                       className={cn(
-                        "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-colors text-left truncate group w-full",
+                        "flex items-start gap-2 px-3 py-3 rounded-lg text-sm transition-colors group relative",
                         currentConversationId === chat.id && activeTab === 'conversations'
                           ? "bg-orange-500/10 text-orange-200 border border-orange-500/20"
                           : "text-zinc-500 hover:text-orange-100 hover:bg-zinc-800/50"
                       )}
-                      title={chat.title}
                     >
-                      <History size={14} className="shrink-0 opacity-70 group-hover:text-orange-300" />
-                      <span className="truncate">{chat.title}</span>
-                    </button>
+                      <button
+                        onClick={() => handleConversationClick(chat.id)}
+                        className="flex items-start gap-2 flex-1 text-left min-w-0"
+                        title={chat.title}
+                      >
+                        <History size={12} className="shrink-0 opacity-70 group-hover:text-orange-300 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-xs leading-tight mb-1 line-clamp-2">
+                            {chat.title}
+                          </div>
+                          <div className="text-[10px] opacity-60">
+                            {formatRelativeDate(chat.updatedAt)}
+                          </div>
+                        </div>
+                      </button>
+                      
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 mt-0.5">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm('Excluir esta conversa?')) {
+                              deleteConversation(chat.id);
+                            }
+                          }}
+                          className="p-1 hover:bg-red-500/20 hover:text-red-400 rounded transition-colors"
+                          title="Excluir conversa"
+                        >
+                          <Trash2 size={10} />
+                        </button>
+                      </div>
+                    </div>
                   ))
                 )}
               </div>

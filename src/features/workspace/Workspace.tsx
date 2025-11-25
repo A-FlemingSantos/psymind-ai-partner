@@ -22,6 +22,7 @@ import ChatInterface from './ChatInterface';
 import { Project } from '@/shared/types/workspace';
 import { cn } from '@/shared/utils/utils';
 import { useChat } from '@/features/chat';
+import { useChatSummary } from '@/features/chat/useChatSummary';
 import { useTheme } from 'next-themes';
 
 const Workspace: React.FC = () => {
@@ -44,6 +45,9 @@ const Workspace: React.FC = () => {
   // Integração com o Contexto de Chat
   const { currentConversationId, selectConversation } = useChat();
   const { setTheme, theme } = useTheme();
+  
+  // Hook para gerar resumos automáticos
+  useChatSummary();
 
   // Estados de interação (Menus)
   const [isFileMenuOpen, setIsFileMenuOpen] = useState(false);

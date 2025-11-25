@@ -12,6 +12,7 @@ export interface Conversation {
   title: string;
   messages: Message[];
   createdAt: Date;
+  updatedAt: Date;
 }
 
 interface ChatContextType {
@@ -21,6 +22,7 @@ interface ChatContextType {
   addMessage: (conversationId: string, message: Message) => void;
   selectConversation: (id: string) => void;
   deleteConversation: (id: string) => void;
+  updateConversationTitle: (id: string, title: string) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -29,15 +31,17 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 const MOCK_CONVERSATIONS: Conversation[] = [
   {
     id: '1',
-    title: 'Gestão de Ansiedade',
+    title: 'Conversa sobre técnicas de respiração e mindfulness para controlar ansiedade no trabalho',
     messages: [],
-    createdAt: new Date()
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 dias atrás
+    updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
   },
   {
-    id: '2',
-    title: 'Planejamento de Estudos',
+    id: '2', 
+    title: 'Discussão sobre organização de cronograma e métodos de estudo eficazes',
     messages: [],
-    createdAt: new Date()
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000), // 1 dia atrás
+    updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
   }
 ];
 
@@ -54,6 +58,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const rehydrated = parsed.map((c: any) => ({
           ...c,
           createdAt: new Date(c.createdAt),
+          updatedAt: new Date(c.updatedAt || c.createdAt),
           messages: c.messages.map((m: any) => ({
             ...m,
             timestamp: new Date(m.timestamp)
@@ -77,13 +82,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const createConversation = (initialPrompt: string) => {
     const newId = Date.now().toString();
-    const title = initialPrompt.split(' ').slice(0, 4).join(' ') + (initialPrompt.length > 20 ? '...' : '');
+    const title = 'Nova conversa';
     
     const newConversation: Conversation = {
       id: newId,
       title,
       messages: [],
-      createdAt: new Date()
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
 
     setConversations(prev => [newConversation, ...prev]);
@@ -94,7 +100,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addMessage = (conversationId: string, message: Message) => {
     setConversations(prev => prev.map(conv => {
       if (conv.id === conversationId) {
-        return { ...conv, messages: [...conv.messages, message] };
+        return { 
+          ...conv, 
+          messages: [...conv.messages, message],
+          updatedAt: new Date()
+        };
       }
       return conv;
     }));
@@ -111,6 +121,15 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateConversationTitle = (id: string, title: string) => {
+    setConversations(prev => prev.map(conv => {
+      if (conv.id === id) {
+        return { ...conv, title };
+      }
+      return conv;
+    }));
+  };
+
   return (
     <ChatContext.Provider value={{
       conversations,
@@ -118,7 +137,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createConversation,
       addMessage,
       selectConversation,
-      deleteConversation
+      deleteConversation,
+      updateConversationTitle
     }}>
       {children}
     </ChatContext.Provider>
