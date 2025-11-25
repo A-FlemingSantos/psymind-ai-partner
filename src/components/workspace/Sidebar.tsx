@@ -14,6 +14,7 @@ import {
 import NavItem from './NavItem';
 import { cn } from '@/lib/utils';
 import { useChat } from '@/context/ChatContext';
+import { useGlobalSettings } from '@/components/GlobalSettingsModal';
 
 interface SidebarProps {
   activeTab: string;
@@ -26,6 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, togg
   const navigate = useNavigate();
   const [isHistoryOpen, setIsHistoryOpen] = useState(true); // Começa aberto para facilitar visualização
   const { conversations, selectConversation, currentConversationId } = useChat();
+  const { openSettings } = useGlobalSettings();
 
   const handleNavigation = (tab: string) => {
     setActiveTab(tab);
@@ -180,7 +182,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, togg
           )}
           
           {isOpen && (
-            <Settings size={16} className="ml-auto text-zinc-400 cursor-pointer hover:text-orange-300 transition-colors shrink-0" />
+            <Settings 
+              size={16} 
+              className="ml-auto text-zinc-400 cursor-pointer hover:text-orange-300 transition-colors shrink-0" 
+              onClick={() => openSettings()}
+            />
           )}
         </div>
       </div>
