@@ -3,7 +3,7 @@ import { Button } from '@/shared/components/ui/button';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select';
-import { Languages, Loader2, Copy, Check, ArrowUpDown } from 'lucide-react';
+import { Languages, Loader2, Copy, Check, ArrowUpDown, Volume2 } from 'lucide-react';
 import { useToast } from '@/shared/hooks/use-toast';
 import { translateText } from '@/shared/services/toolsService';
 
@@ -17,7 +17,9 @@ const languages = [
   { code: 'ja', name: 'Japonês', flag: '🇯🇵' },
   { code: 'ko', name: 'Coreano', flag: '🇰🇷' },
   { code: 'zh', name: 'Chinês', flag: '🇨🇳' },
-  { code: 'ru', name: 'Russo', flag: '🇷🇺' }
+  { code: 'ru', name: 'Russo', flag: '🇷🇺' },
+  { code: 'el', name: 'Grego', flag: '🇬🇷' },
+  { code: 'la', name: 'Latim', flag: '🏛️' }
 ];
 
 const AITranslator: React.FC = () => {
@@ -77,6 +79,13 @@ const AITranslator: React.FC = () => {
       setInputText(translatedText);
       setTranslatedText('');
     }
+  };
+
+  const speakText = () => {
+    if (!translatedText) return;
+    const utterance = new window.SpeechSynthesisUtterance(translatedText);
+    utterance.lang = toLanguage;
+    window.speechSynthesis.speak(utterance);
   };
 
   const copyToClipboard = async () => {
@@ -204,18 +213,29 @@ const AITranslator: React.FC = () => {
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               Tradução
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={copyToClipboard}
-                className="ml-2"
-              >
-                {copied ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Copy className="h-4 w-4" />
-                )}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={speakText}
+                  aria-label="Ouvir tradução"
+                >
+                  <Volume2 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={copyToClipboard}
+                  className="ml-0"
+                  aria-label="Copiar tradução"
+                >
+                  {copied ? (
+                    <Check className="h-4 w-4" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent>

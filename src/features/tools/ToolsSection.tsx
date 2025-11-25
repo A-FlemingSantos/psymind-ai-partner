@@ -10,7 +10,11 @@ import {
   X,
   Languages,
   HelpCircle,
-  CheckCircle
+  CheckCircle,
+  Medal,
+  Smile,
+  Trophy,
+  GraduationCap
 } from 'lucide-react';
 import { usePomodoro } from './PomodoroContext';
 import { cn } from '@/shared/utils';
@@ -120,7 +124,7 @@ const ToolsSection: React.FC = () => {
       id: 'mood-tracker',
       name: 'Rastreador de Humor',
       description: 'Monitore e analise seu estado emocional',
-      icon: <Heart size={24} />,
+      icon: <Smile size={24} />,
       category: 'wellbeing',
       color: 'bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400',
       onClick: () => setSelectedTool('mood-tracker')
@@ -156,7 +160,7 @@ const ToolsSection: React.FC = () => {
       id: 'exam-prep',
       name: 'Preparatório Vestibulares',
       description: 'Estude para ENEM, FUVEST e outros vestibulares',
-      icon: <Brain size={24} />,
+      icon: <GraduationCap size={24} />, 
       category: 'analysis',
       color: 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400',
       onClick: () => setSelectedTool('exam-prep')
