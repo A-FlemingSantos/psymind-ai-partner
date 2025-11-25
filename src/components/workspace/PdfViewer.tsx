@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
-// Importante: Importar o worker explicitamente ou configurar via CDN como feito abaixo
-// Se houver erros de build, o CDN é a abordagem mais segura para Vite sem config extra
+import 'pdfjs-dist/web/pdf_viewer.css'; // Import critical CSS for text layer alignment
 
 import { 
   ChevronLeft, 
@@ -20,7 +19,6 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 // Configuração do Worker via CDN para garantir compatibilidade
-// Usamos a versão instalada no package.json ou um fallback
 const pdfjsVersion = pdfjsLib.version || '4.8.69';
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsVersion}/build/pdf.worker.min.mjs`;
 
@@ -98,13 +96,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ url, fileName }) => {
         canvas.style.height = `${Math.floor(viewport.height)}px`;
 
         // Limpar e dimensionar a camada de texto para bater com o canvas
+        // IMPORTANTE: A classe 'textLayer' do CSS oficial espera essas variáveis
+        textLayerDiv.style.setProperty('--scale-factor', `${scale}`);
         textLayerDiv.style.width = `${Math.floor(viewport.width)}px`;
         textLayerDiv.style.height = `${Math.floor(viewport.height)}px`;
         textLayerDiv.innerHTML = ""; // Limpa texto anterior
         
-        // Adicionar variável CSS para escala correta do texto
-        textLayerDiv.style.setProperty('--scale-factor', `${scale}`);
-
         const transform = outputScale !== 1 
           ? [outputScale, 0, 0, outputScale, 0, 0] 
           : undefined;
@@ -167,19 +164,18 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ url, fileName }) => {
 
   return (
     <div ref={containerRef} className="flex flex-col h-full bg-zinc-100/50 dark:bg-zinc-950/50 m-4 rounded-xl overflow-hidden border border-border shadow-lg group">
-      {/* Styles Específicos para a Camada de Texto do PDF.js */}
+      {/* Styles Específicos para customizar a Camada de Texto sobre o CSS original */}
       <style>{`
         .pdf-viewer-container .textLayer {
             position: absolute;
-            text-align: initial;
             left: 0;
             top: 0;
             right: 0;
             bottom: 0;
             overflow: hidden;
             line-height: 1.0;
-            opacity: 0.2; /* Torna o texto levemente visível para debug, ou 0 para invisível */
-            transform-origin: 0 0;
+            opacity: 1; /* Importante: deve ser visível para seleção funcionar (mas com texto transparente) */
+            mix-blend-mode: multiply;
         }
 
         .pdf-viewer-container .textLayer > span {
@@ -190,12 +186,13 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ url, fileName }) => {
             transform-origin: 0% 0%;
         }
 
+        /* Cor da seleção */
         .pdf-viewer-container .textLayer ::selection {
-            background: rgba(0, 0, 255, 0.3); /* Cor azul padrão de seleção */
+            background: rgba(0, 100, 255, 0.2);
             color: transparent;
         }
         
-        /* Garante que br não quebre o layout absoluto */
+        /* Remove quebras de linha para não afetar layout absoluto */
         .pdf-viewer-container .textLayer > br {
             display: none;
         }
@@ -280,7 +277,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ url, fileName }) => {
             {/* Canvas for Rendering (Visual) */}
             <canvas ref={canvasRef} className="block" />
             
-            {/* Text Layer for Selection (Invisible Overlay) */}
+            {/* Text Layer for Selection (Overlay) */}
             <div ref={textLayerRef} className="textLayer" />
           </div>
         )}
