@@ -26,7 +26,10 @@ import {
   FileSpreadsheet,
   FileChartPie,
   File,
-  MessageCircle
+  MessageCircle,
+  Image as ImageIcon,
+  Music,
+  Video
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +46,12 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 // Importação atualizada para usar o serviço específico do Editor
 import { sendMessageToEditor, ChatMessage } from '@/lib/gemini-editor';
+
+interface UploadedFile {
+  id: string;
+  name: string;
+  type: 'pdf' | 'text' | 'image' | 'audio' | 'video' | 'other';
+}
 
 const Editor: React.FC = () => {
   const navigate = useNavigate();
@@ -69,6 +78,7 @@ const Editor: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [hasStartedChat, setHasStartedChat] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null); // Ref para o input de arquivo
@@ -177,8 +187,63 @@ const Editor: React.FC = () => {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      console.log("Arquivos selecionados:", files);
-      // Aqui você implementaria a lógica para processar os arquivos
+      const newFiles: UploadedFile[] = Array.from(files)
+        .map(file => {
+          let type: UploadedFile['type'] = 'other';
+          if (file.type === 'application/pdf') type = 'pdf';
+          else if (file.type.startsWith('text/')) type = 'text';
+          else if (file.type.startsWith('image/')) type = 'image';
+          else if (file.type.startsWith('audio/')) type = 'audio';
+          else if (file.type.startsWith('video/')) type = 'video';
+          
+          return {
+            id: Math.random().toString(36).substring(2, 9),
+            name: file.name,
+            type
+          };
+        });
+      
+      setUploadedFiles(prev => [...prev, ...newFiles]);
+      
+      // Reset input value so the same file can be selected again if needed
+      event.target.value = '';
+    }
+  };
+
+  const handleRemoveFile = (id: string) => {
+    setUploadedFiles(prev => prev.filter(f => f.id !== id));
+  };
+
+  const getFileIcon = (type: UploadedFile['type']) => {
+    switch (type) {
+      case 'pdf':
+      case 'text':
+        return <FileText size={20} />;
+      case 'image':
+        return <ImageIcon size={20} />;
+      case 'audio':
+        return <Music size={20} />;
+      case 'video':
+        return <Video size={20} />;
+      default:
+        return <File size={20} />;
+    }
+  };
+
+  const getFileColorClass = (type: UploadedFile['type']) => {
+    switch (type) {
+      case 'pdf':
+        return 'bg-red-50 dark:bg-red-900/20 text-red-500';
+      case 'text':
+        return 'bg-blue-50 dark:bg-blue-900/20 text-blue-500';
+      case 'image':
+        return 'bg-purple-50 dark:bg-purple-900/20 text-purple-500';
+      case 'audio':
+        return 'bg-pink-50 dark:bg-pink-900/20 text-pink-500';
+      case 'video':
+        return 'bg-orange-50 dark:bg-orange-900/20 text-orange-500';
+      default:
+        return 'bg-gray-50 dark:bg-gray-900/20 text-gray-500';
     }
   };
 
@@ -354,50 +419,90 @@ const Editor: React.FC = () => {
                   <X size={18} />
                 </Button>
                 <span className="text-sm font-medium text-foreground">Fontes</span>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={handleAddSourcesClick}>
                   <Plus size={18} />
                 </Button>
               </div>
 
               {/* Sources Content */}
-              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center animate-in fade-in duration-500">
-                {/* Illustration */}
-                <div className="bg-blue-100/80 dark:bg-blue-900/20 rounded-[2.5rem] p-10 mb-8 w-full aspect-square max-w-[280px] grid grid-cols-2 gap-4 place-items-center">
-                  <div className="bg-background p-4 rounded-2xl shadow-sm text-red-500 dark:text-red-400 flex items-center justify-center w-16 h-16">
-                    <FileText size={32} strokeWidth={1.5} />
-                  </div>
-                  <div className="bg-background p-4 rounded-2xl shadow-sm text-blue-500 dark:text-blue-400 flex items-center justify-center w-16 h-16">
-                    <File size={32} strokeWidth={1.5} />
-                  </div>
-                  <div className="bg-background p-4 rounded-2xl shadow-sm text-green-500 dark:text-green-400 flex items-center justify-center w-16 h-16">
-                    <FileSpreadsheet size={32} strokeWidth={1.5} />
-                  </div>
-                  <div className="bg-background p-4 rounded-2xl shadow-sm text-orange-500 dark:text-orange-400 flex items-center justify-center w-16 h-16">
-                    <FileChartPie size={32} strokeWidth={1.5} />
-                  </div>
-                </div>
+              <div className="flex-1 flex flex-col p-6 overflow-y-auto animate-in fade-in duration-500">
+                
+                {uploadedFiles.length === 0 ? (
+                  // Empty State
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    {/* Illustration */}
+                    <div className="bg-blue-100/80 dark:bg-blue-900/20 rounded-[2.5rem] p-10 mb-8 w-full aspect-square max-w-[280px] grid grid-cols-2 gap-4 place-items-center">
+                      <div className="bg-background p-4 rounded-2xl shadow-sm text-red-500 dark:text-red-400 flex items-center justify-center w-16 h-16">
+                        <FileText size={32} strokeWidth={1.5} />
+                      </div>
+                      <div className="bg-background p-4 rounded-2xl shadow-sm text-blue-500 dark:text-blue-400 flex items-center justify-center w-16 h-16">
+                        <File size={32} strokeWidth={1.5} />
+                      </div>
+                      <div className="bg-background p-4 rounded-2xl shadow-sm text-green-500 dark:text-green-400 flex items-center justify-center w-16 h-16">
+                        <FileSpreadsheet size={32} strokeWidth={1.5} />
+                      </div>
+                      <div className="bg-background p-4 rounded-2xl shadow-sm text-orange-500 dark:text-orange-400 flex items-center justify-center w-16 h-16">
+                        <FileChartPie size={32} strokeWidth={1.5} />
+                      </div>
+                    </div>
 
-                <p className="text-sm text-muted-foreground mb-8 leading-relaxed max-w-[260px]">
-                  Carregue PDFs, documentos ou outros arquivos — usarei esses dados para fazer edições mais úteis.
-                </p>
+                    <p className="text-sm text-muted-foreground mb-8 leading-relaxed max-w-[260px]">
+                      Carregue PDFs, documentos ou outros arquivos — usarei esses dados para fazer edições mais úteis.
+                    </p>
+
+                    <Button 
+                      className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full px-8 py-6 font-medium hover:opacity-90 shadow-lg shadow-zinc-500/20 dark:shadow-none transition-all transform hover:-translate-y-0.5"
+                      onClick={handleAddSourcesClick}
+                    >
+                      Adicionar fontes
+                    </Button>
+                  </div>
+                ) : (
+                  // List of Files
+                  <div className="space-y-3">
+                    {uploadedFiles.map((file) => (
+                      <div key={file.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border shadow-sm hover:shadow-md transition-shadow group">
+                        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", getFileColorClass(file.type))}>
+                          {getFileIcon(file.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate" title={file.name}>{file.name}</p>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wider">{file.type}</p>
+                        </div>
+                        <button 
+                          onClick={() => handleRemoveFile(file.id)}
+                          className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
+                          title="Remover arquivo"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                    
+                    <div className="mt-4 flex justify-center">
+                      <Button 
+                        variant="outline" 
+                        className="gap-2 rounded-full"
+                        onClick={handleAddSourcesClick}
+                      >
+                        <Plus size={16} />
+                        Adicionar mais
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Hidden File Input */}
                 <input 
                   type="file" 
                   ref={fileInputRef} 
                   className="hidden" 
+                  accept=".pdf,.txt,.md,.png,.jpg,.jpeg,.webp,.mp3,.wav,.mp4" // Supported file types
                   onChange={handleFileChange}
                   multiple
                 />
 
-                <Button 
-                  className="bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-full px-8 py-6 font-medium hover:opacity-90 shadow-lg shadow-zinc-500/20 dark:shadow-none transition-all transform hover:-translate-y-0.5"
-                  onClick={handleAddSourcesClick}
-                >
-                  Adicionar fontes
-                </Button>
-
-                <p className="text-xs text-muted-foreground/60 mt-auto pt-12">
+                <p className="text-xs text-muted-foreground/60 mt-auto pt-12 text-center">
                   Os anexos do chat não são exibidos aqui
                 </p>
               </div>
