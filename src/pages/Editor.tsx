@@ -29,7 +29,24 @@ import {
   MessageCircle,
   Image as ImageIcon,
   Music,
-  Video
+  Video,
+  FileIcon,
+  ZoomIn,
+  ZoomOut,
+  Play,
+  Pause,
+  Download,
+  Maximize2,
+  Minimize2,
+  ChevronLeft as PrevIcon,
+  ChevronRight as NextIcon,
+  Volume2,
+  VolumeX,
+  Sun,
+  Moon,
+  Grid,
+  List as ListIcon,
+  Search
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,13 +61,17 @@ import {
 import { cn } from "@/lib/utils";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Slider } from "@/components/ui/slider"; 
 // Importação atualizada para usar o serviço específico do Editor
 import { sendMessageToEditor, ChatMessage } from '@/lib/gemini-editor';
+import PdfViewer from '@/components/workspace/PdfViewer'; // NEW IMPORT
 
 interface UploadedFile {
   id: string;
   name: string;
   type: 'pdf' | 'text' | 'image' | 'audio' | 'video' | 'other';
+  file: File; 
+  previewUrl?: string;
 }
 
 const Editor: React.FC = () => {
@@ -68,11 +89,11 @@ const Editor: React.FC = () => {
 
   // Conteúdo do Editor
   const [content, setContent] = useState("");
-  const [isPreviewMode, setIsPreviewMode] = useState(false); // Estado para alternar visualização
+  const [isPreviewMode, setIsPreviewMode] = useState(false); 
   
   // Estados do Sidebar e Chat
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [sidebarView, setSidebarView] = useState<'chat' | 'sources'>('chat'); // Novo estado para controlar a visualização da sidebar
+  const [sidebarView, setSidebarView] = useState<'chat' | 'sources'>('chat'); 
 
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -80,8 +101,24 @@ const Editor: React.FC = () => {
   const [hasStartedChat, setHasStartedChat] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   
+  // Tab System State
+  const [openFiles, setOpenFiles] = useState<string[]>(['main']); 
+  const [activeTabId, setActiveTabId] = useState<string>('main');
+
+  // Viewer Specific States
+  const [imageZoom, setImageZoom] = useState(1);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [textTheme, setTextTheme] = useState<'light' | 'dark'>('light');
+  const [textContent, setTextContent] = useState<string>(""); 
+  const [isLoadingText, setIsLoadingText] = useState(false);
+
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null); // Ref para o input de arquivo
+  const fileInputRef = useRef<HTMLInputElement>(null); 
 
   // Auto-scroll para a última mensagem
   useEffect(() => {
@@ -90,10 +127,34 @@ const Editor: React.FC = () => {
     }
   }, [messages, isTyping, isSidebarOpen, hasStartedChat, sidebarView]);
 
+  // Effect to load text content when active tab changes to a text file
+  useEffect(() => {
+    const loadTextContent = async () => {
+      const activeFile = uploadedFiles.find(f => f.id === activeTabId);
+      if (activeFile && (activeFile.type === 'text' || activeFile.type === 'other') && activeFile.previewUrl) {
+        setIsLoadingText(true);
+        try {
+          const response = await fetch(activeFile.previewUrl);
+          const text = await response.text();
+          setTextContent(text);
+        } catch (error) {
+          console.error("Error reading text file:", error);
+          setTextContent("Erro ao carregar conteúdo do arquivo.");
+        } finally {
+          setIsLoadingText(false);
+        }
+      } else {
+        setTextContent("");
+      }
+    };
+
+    if (activeTabId !== 'main') {
+        loadTextContent();
+    }
+  }, [activeTabId, uploadedFiles]);
+
   const handleToolbarAction = (e: React.MouseEvent, action: string) => {
     e.preventDefault();
-    
-    // Função simples para inserir formatação markdown no textarea
     const textarea = document.getElementById('editor-textarea') as HTMLTextAreaElement;
     if (!textarea) return;
 
@@ -104,18 +165,10 @@ const Editor: React.FC = () => {
     let insertion = '';
 
     switch (action) {
-      case 'bold':
-        insertion = `**${selectedText || 'texto em negrito'}**`;
-        break;
-      case 'italic':
-        insertion = `*${selectedText || 'texto em itálico'}*`;
-        break;
-      case 'list':
-        insertion = `\n- ${selectedText || 'item da lista'}`;
-        break;
-      case 'code':
-        insertion = `\`${selectedText || 'código'}\``;
-        break;
+      case 'bold': insertion = `**${selectedText || 'texto em negrito'}**`; break;
+      case 'italic': insertion = `*${selectedText || 'texto em itálico'}*`; break;
+      case 'list': insertion = `\n- ${selectedText || 'item da lista'}`; break;
+      case 'code': insertion = `\`${selectedText || 'código'}\``; break;
     }
 
     if (insertion) {
@@ -133,17 +186,13 @@ const Editor: React.FC = () => {
     if (!chatInput.trim()) return;
 
     const userMessage: ChatMessage = { role: 'user', content: chatInput };
-    
-    // Atualiza estado imediato
     setMessages(prev => [...prev, userMessage]);
     setChatInput("");
     setHasStartedChat(true);
     setIsTyping(true);
 
     try {
-      // Chama a API específica do Editor, PASSANDO O CONTEÚDO DO DOCUMENTO
       const responseText = await sendMessageToEditor(messages, userMessage.content, content);
-      
       const aiMessage: ChatMessage = { role: 'ai', content: responseText };
       setMessages(prev => [...prev, aiMessage]);
     } catch (error) {
@@ -191,7 +240,7 @@ const Editor: React.FC = () => {
         .map(file => {
           let type: UploadedFile['type'] = 'other';
           if (file.type === 'application/pdf') type = 'pdf';
-          else if (file.type.startsWith('text/')) type = 'text';
+          else if (file.type.startsWith('text/') || file.name.endsWith('.md') || file.name.endsWith('.txt') || file.name.endsWith('.json') || file.name.endsWith('.js') || file.name.endsWith('.ts')) type = 'text';
           else if (file.type.startsWith('image/')) type = 'image';
           else if (file.type.startsWith('audio/')) type = 'audio';
           else if (file.type.startsWith('video/')) type = 'video';
@@ -199,80 +248,407 @@ const Editor: React.FC = () => {
           return {
             id: Math.random().toString(36).substring(2, 9),
             name: file.name,
-            type
+            type,
+            file,
+            previewUrl: URL.createObjectURL(file)
           };
         });
       
       setUploadedFiles(prev => [...prev, ...newFiles]);
-      
-      // Reset input value so the same file can be selected again if needed
       event.target.value = '';
     }
   };
 
   const handleRemoveFile = (id: string) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== id));
+    setUploadedFiles(prev => {
+      const fileToRemove = prev.find(f => f.id === id);
+      if (fileToRemove?.previewUrl) {
+        URL.revokeObjectURL(fileToRemove.previewUrl);
+      }
+      return prev.filter(f => f.id !== id);
+    });
+    
+    if (openFiles.includes(id)) {
+      handleCloseTab(id);
+    }
+  };
+
+  const handleOpenFile = (fileId: string) => {
+    if (!openFiles.includes(fileId)) {
+      setOpenFiles(prev => [...prev, fileId]);
+    }
+    setActiveTabId(fileId);
+    // Reset states
+    setImageZoom(1);
+    setIsPlaying(false);
+    setCurrentTime(0);
+  };
+
+  const handleCloseTab = (tabId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (tabId === 'main') return; 
+
+    const newOpenFiles = openFiles.filter(id => id !== tabId);
+    setOpenFiles(newOpenFiles);
+
+    if (activeTabId === tabId) {
+      const index = openFiles.indexOf(tabId);
+      const newActiveId = newOpenFiles[index - 1] || 'main';
+      setActiveTabId(newActiveId);
+    }
   };
 
   const getFileIcon = (type: UploadedFile['type']) => {
     switch (type) {
       case 'pdf':
-      case 'text':
-        return <FileText size={20} />;
-      case 'image':
-        return <ImageIcon size={20} />;
-      case 'audio':
-        return <Music size={20} />;
-      case 'video':
-        return <Video size={20} />;
-      default:
-        return <File size={20} />;
+      case 'text': return <FileText size={20} />;
+      case 'image': return <ImageIcon size={20} />;
+      case 'audio': return <Music size={20} />;
+      case 'video': return <Video size={20} />;
+      default: return <File size={20} />;
     }
   };
 
   const getFileColorClass = (type: UploadedFile['type']) => {
     switch (type) {
-      case 'pdf':
-        return 'bg-red-50 dark:bg-red-900/20 text-red-500';
-      case 'text':
-        return 'bg-blue-50 dark:bg-blue-900/20 text-blue-500';
-      case 'image':
-        return 'bg-purple-50 dark:bg-purple-900/20 text-purple-500';
-      case 'audio':
-        return 'bg-pink-50 dark:bg-pink-900/20 text-pink-500';
-      case 'video':
-        return 'bg-orange-50 dark:bg-orange-900/20 text-orange-500';
-      default:
-        return 'bg-gray-50 dark:bg-gray-900/20 text-gray-500';
+      case 'pdf': return 'bg-red-50 dark:bg-red-900/20 text-red-500';
+      case 'text': return 'bg-blue-50 dark:bg-blue-900/20 text-blue-500';
+      case 'image': return 'bg-purple-50 dark:bg-purple-900/20 text-purple-500';
+      case 'audio': return 'bg-pink-50 dark:bg-pink-900/20 text-pink-500';
+      case 'video': return 'bg-orange-50 dark:bg-orange-900/20 text-orange-500';
+      default: return 'bg-gray-50 dark:bg-gray-900/20 text-gray-500';
+    }
+  };
+
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+
+  // --- Custom Viewers ---
+
+  const renderImageViewer = (file: UploadedFile) => (
+    <div className="flex flex-col h-full bg-zinc-50/50 dark:bg-zinc-950/50 rounded-xl overflow-hidden shadow-sm border border-border/50 m-4 relative group">
+      <div className="absolute top-4 right-4 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="bg-black/70 backdrop-blur-md text-white rounded-full p-1.5 flex gap-2 shadow-lg">
+          <button onClick={() => setImageZoom(z => Math.max(0.1, z - 0.1))} className="p-1.5 hover:bg-white/20 rounded-full transition-colors"><ZoomOut size={16} /></button>
+          <span className="text-xs font-medium w-8 flex items-center justify-center">{Math.round(imageZoom * 100)}%</span>
+          <button onClick={() => setImageZoom(z => Math.min(3, z + 0.1))} className="p-1.5 hover:bg-white/20 rounded-full transition-colors"><ZoomIn size={16} /></button>
+          <div className="w-px bg-white/20 my-1 mx-0.5"></div>
+          <button onClick={() => window.open(file.previewUrl, '_blank')} className="p-1.5 hover:bg-white/20 rounded-full transition-colors"><Download size={16} /></button>
+        </div>
+      </div>
+      
+      <div className="flex-1 overflow-auto flex items-center justify-center p-8 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-repeat">
+        <div 
+          className="relative shadow-2xl rounded-lg overflow-hidden transition-transform duration-200 ease-out"
+          style={{ transform: `scale(${imageZoom})` }}
+        >
+          <img 
+            src={file.previewUrl} 
+            alt={file.name} 
+            className="max-w-full max-h-[80vh] object-contain" 
+          />
+        </div>
+      </div>
+      <div className="bg-card/80 backdrop-blur-sm border-t border-border p-2 text-center text-xs text-muted-foreground">
+        {file.name}
+      </div>
+    </div>
+  );
+
+  const renderAudioViewer = (file: UploadedFile) => {
+    const toggleAudio = () => {
+      if (audioRef.current) {
+        if (isPlaying) {
+          audioRef.current.pause();
+        } else {
+          audioRef.current.play();
+        }
+        setIsPlaying(!isPlaying);
+      }
+    };
+
+    const handleTimeUpdate = () => {
+      if (audioRef.current) {
+        setCurrentTime(audioRef.current.currentTime);
+        setDuration(audioRef.current.duration || 0);
+      }
+    };
+
+    const handleSeek = (value: number[]) => {
+      if (audioRef.current) {
+        audioRef.current.currentTime = value[0];
+        setCurrentTime(value[0]);
+      }
+    };
+
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-gradient-to-b from-zinc-50 to-zinc-100 dark:from-zinc-950 dark:to-zinc-900 p-8 m-4 rounded-xl border border-border/50">
+        <div className="bg-card w-full max-w-md p-8 rounded-[2.5rem] shadow-2xl border border-white/50 dark:border-zinc-800 flex flex-col items-center gap-8 relative overflow-hidden">
+          
+          {/* Custom Visualizer Background */}
+          <div className="absolute inset-0 bg-gradient-to-b from-pink-500/5 to-transparent pointer-events-none"></div>
+          
+          {/* Album Art / Visualizer */}
+          <div className="relative group cursor-pointer" onClick={toggleAudio}>
+            <div className={cn(
+              "w-56 h-56 rounded-full bg-gradient-to-br from-pink-100 to-orange-100 dark:from-pink-900/30 dark:to-orange-900/20 flex items-center justify-center shadow-[inset_0_2px_4px_rgba(255,255,255,0.3)] transition-all duration-700 ease-in-out",
+              isPlaying && "scale-105 shadow-[0_0_40px_rgba(236,72,153,0.2)]"
+            )}>
+              <div className={cn("w-48 h-48 rounded-full bg-card flex items-center justify-center shadow-sm z-10 transition-transform", isPlaying && "scale-95")}>
+                 <Music size={64} className={cn("text-pink-400 transition-colors duration-500", isPlaying ? "text-pink-500" : "text-pink-300")} />
+              </div>
+              {/* Simulated Waveform Ring */}
+              <div className={cn("absolute inset-0 rounded-full border-[3px] border-pink-500/20 border-dashed animate-spin-slow", isPlaying ? "opacity-100" : "opacity-0")}></div>
+            </div>
+          </div>
+
+          {/* Track Info */}
+          <div className="text-center space-y-2 z-10 w-full px-4">
+            <h3 className="font-serif text-2xl font-semibold text-foreground truncate w-full" title={file.name}>
+              {file.name}
+            </h3>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Audio Preview</p>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="w-full space-y-2 z-10">
+            <Slider 
+              value={[currentTime]} 
+              max={duration || 100} 
+              step={1} 
+              onValueChange={handleSeek}
+              className="cursor-pointer" 
+            />
+            <div className="flex justify-between text-[10px] font-medium text-muted-foreground tabular-nums">
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration || 0)}</span>
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center gap-8 z-10">
+             <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+               <PrevIcon size={24} />
+             </Button>
+             <Button 
+                size="icon" 
+                className="h-16 w-16 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-black shadow-xl hover:scale-105 transition-all active:scale-95"
+                onClick={toggleAudio}
+             >
+               {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" className="ml-1" />}
+             </Button>
+             <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+               <NextIcon size={24} />
+             </Button>
+          </div>
+
+          <audio 
+            ref={audioRef} 
+            src={file.previewUrl} 
+            className="hidden" 
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleTimeUpdate}
+            onEnded={() => setIsPlaying(false)} 
+            onPause={() => setIsPlaying(false)}
+            onPlay={() => setIsPlaying(true)}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  const renderVideoViewer = (file: UploadedFile) => {
+    const toggleVideo = () => {
+      if (videoRef.current) {
+        if (isPlaying) videoRef.current.pause();
+        else videoRef.current.play();
+        setIsPlaying(!isPlaying);
+      }
+    };
+
+    const handleTimeUpdate = () => {
+      if (videoRef.current) {
+        setCurrentTime(videoRef.current.currentTime);
+        setDuration(videoRef.current.duration || 0);
+      }
+    };
+
+    const handleSeek = (value: number[]) => {
+      if (videoRef.current) {
+        videoRef.current.currentTime = value[0];
+        setCurrentTime(value[0]);
+      }
+    };
+
+    return (
+      <div className="flex flex-col h-full bg-zinc-950 m-4 rounded-xl overflow-hidden shadow-2xl border border-zinc-800 relative group">
+        {/* Custom Header Overlay */}
+        <div className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/80 to-transparent z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex justify-between items-center pointer-events-none">
+          <span className="text-sm font-medium text-white/90 truncate shadow-sm pointer-events-auto">{file.name}</span>
+          <div className="flex gap-2 pointer-events-auto">
+            <Button variant="ghost" size="icon" className="text-white/80 hover:text-white hover:bg-white/10 h-8 w-8" onClick={() => window.open(file.previewUrl, '_blank')}>
+              <Download size={16} />
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex-1 flex items-center justify-center bg-black relative cursor-pointer" onClick={toggleVideo}>
+          <video 
+            ref={videoRef}
+            src={file.previewUrl} 
+            className="max-w-full max-h-full shadow-lg"
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleTimeUpdate}
+            controls={false} 
+          />
+          {!isPlaying && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 pointer-events-none">
+              <div className="w-20 h-20 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/20 shadow-2xl transition-transform hover:scale-110">
+                <Play size={40} fill="white" className="text-white ml-2" />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Custom Controls Bar */}
+        <div className="bg-zinc-900 border-t border-zinc-800 p-4 flex items-center gap-4 z-20">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleVideo}
+            className="text-white hover:bg-white/10 hover:text-white shrink-0"
+          >
+            {isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
+          </Button>
+          
+          <div className="flex-1 flex items-center gap-2">
+             <span className="text-[10px] text-zinc-400 tabular-nums w-10 text-right">{formatTime(currentTime)}</span>
+             <Slider 
+               value={[currentTime]} 
+               max={duration || 100} 
+               step={1} 
+               onValueChange={handleSeek}
+               className="cursor-pointer" 
+             />
+             <span className="text-[10px] text-zinc-400 tabular-nums w-10">{formatTime(duration || 0)}</span>
+          </div>
+          
+          <div className="flex items-center gap-2 text-zinc-400 shrink-0">
+            <Volume2 size={18} />
+            <div className="w-20">
+               <Slider defaultValue={[80]} max={100} step={1} />
+            </div>
+          </div>
+
+          <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white shrink-0" onClick={() => videoRef.current?.requestFullscreen()}>
+            <Maximize2 size={18} />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderTextViewer = (file: UploadedFile) => (
+    <div className={cn("flex flex-col h-full m-4 rounded-xl overflow-hidden border border-border shadow-sm transition-colors duration-300", textTheme === 'dark' ? "bg-[#1e1e1e]" : "bg-white")}>
+      <div className={cn("flex items-center justify-between px-6 py-3 border-b transition-colors duration-300", textTheme === 'dark' ? "bg-[#252526] border-[#333]" : "bg-zinc-50 border-border")}>
+        <div className="flex items-center gap-2">
+          <FileIcon size={16} className="text-blue-500" />
+          <span className={cn("text-sm font-mono", textTheme === 'dark' ? "text-zinc-400" : "text-zinc-600")}>{file.name}</span>
+        </div>
+        <div className="flex gap-2 items-center">
+           <div className="flex bg-black/5 dark:bg-white/5 rounded-lg p-0.5">
+             <button 
+               onClick={() => setTextTheme('light')}
+               className={cn("p-1.5 rounded-md transition-all", textTheme === 'light' ? "bg-white shadow-sm text-yellow-600" : "text-muted-foreground hover:text-foreground")}
+             >
+               <Sun size={14} />
+             </button>
+             <button 
+               onClick={() => setTextTheme('dark')}
+               className={cn("p-1.5 rounded-md transition-all", textTheme === 'dark' ? "bg-zinc-700 shadow-sm text-blue-400" : "text-muted-foreground hover:text-foreground")}
+             >
+               <Moon size={14} />
+             </button>
+           </div>
+           <Separator orientation="vertical" className="h-4 mx-1" />
+           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => window.open(file.previewUrl, '_blank')}>
+             <Download size={14} />
+           </Button>
+        </div>
+      </div>
+      <div className="flex-1 overflow-auto flex relative">
+        {/* Line Numbers Simulation */}
+        <div className={cn("w-12 py-8 flex flex-col items-end pr-4 font-mono text-xs select-none opacity-50 border-r", textTheme === 'dark' ? "bg-[#1e1e1e] border-[#333] text-zinc-600" : "bg-zinc-50 border-border text-zinc-400")}>
+          {Array.from({length: 50}).map((_, i) => <div key={i} className="leading-relaxed">{i + 1}</div>)}
+        </div>
+        
+        <div className={cn("flex-1 p-8 font-mono text-sm leading-relaxed overflow-auto whitespace-pre-wrap", textTheme === 'dark' ? "text-zinc-300" : "text-zinc-800")}>
+          {isLoadingText ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            textContent || <span className="opacity-50 italic">Arquivo vazio ou impossível de ler.</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderFileViewer = () => {
+    const activeFile = uploadedFiles.find(f => f.id === activeTabId);
+    
+    if (!activeFile) return <div className="flex items-center justify-center h-full text-muted-foreground">Arquivo não encontrado</div>;
+
+    switch (activeFile.type) {
+      case 'image': return renderImageViewer(activeFile);
+      case 'audio': return renderAudioViewer(activeFile);
+      case 'video': return renderVideoViewer(activeFile);
+      case 'pdf': return <PdfViewer url={activeFile.previewUrl || ""} fileName={activeFile.name} />;
+      case 'text': return renderTextViewer(activeFile);
+      default: return (
+        <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
+          <File size={64} strokeWidth={1} />
+          <p>Pré-visualização não disponível para este tipo de arquivo.</p>
+          <Button variant="outline" onClick={() => window.open(activeFile.previewUrl, '_blank')}>
+            Baixar Arquivo
+          </Button>
+        </div>
+      );
     }
   };
 
   return (
     <div className="flex h-screen bg-background font-sans text-foreground overflow-hidden">
       
-      {/* Main Editor Area */}
-      <div className="flex-1 flex flex-col h-full transition-all duration-300 relative">
+      {/* Main Area (Editor + Tabs + Viewer) */}
+      <div className="flex-1 flex flex-col h-full transition-all duration-300 relative min-w-0">
         
-        {/* Top Navigation / Header */}
-        <header className="flex items-center justify-between px-6 py-4 border-b border-border/40">
-          <div className="flex items-center gap-3 flex-1">
+        {/* Top Header */}
+        <header className="flex items-center justify-between px-6 py-3 border-b border-border/40 shrink-0">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={() => navigate('/workspace')}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground shrink-0"
             >
               <ChevronLeft size={20} />
             </Button>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="text-lg font-serif font-semibold bg-transparent border-none shadow-none focus-visible:ring-0 px-0 h-auto w-full max-w-md placeholder:text-muted-foreground/50"
+              className="text-lg font-serif font-semibold bg-transparent border-none shadow-none focus-visible:ring-0 px-0 h-auto w-full max-w-md placeholder:text-muted-foreground/50 truncate"
               placeholder="Página sem título"
             />
           </div>
 
-          <div className="flex items-center gap-1 text-muted-foreground">
+          <div className="flex items-center gap-1 text-muted-foreground shrink-0 ml-2">
             <Button variant="ghost" size="sm" className="gap-2 h-9 px-3 text-xs font-medium hidden sm:flex">
               <FilePlus size={16} />
             </Button>
@@ -319,91 +695,142 @@ const Editor: React.FC = () => {
           </div>
         </header>
 
-        {/* Toolbar */}
-        <div className="px-6 py-3 border-b border-border/40 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar">
-          <div className="flex items-center gap-2">
-            <Select defaultValue="paragraph">
-              <SelectTrigger className="w-[120px] h-8 border-none bg-transparent focus:ring-0 text-xs font-medium text-muted-foreground hover:bg-accent/50">
-                <SelectValue placeholder="Estilo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="paragraph">Parágrafo</SelectItem>
-                <SelectItem value="h1">Título 1</SelectItem>
-                <SelectItem value="h2">Título 2</SelectItem>
-                <SelectItem value="h3">Título 3</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Separator orientation="vertical" className="h-5" />
-
-            <div className="flex items-center gap-0.5">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => handleToolbarAction(e, 'bold')} title="Negrito (**texto**)">
-                <Bold size={14} />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => handleToolbarAction(e, 'italic')} title="Itálico (*texto*)">
-                <Italic size={14} />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => handleToolbarAction(e, 'list')} title="Lista (- item)">
-                <List size={14} />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => handleToolbarAction(e, 'code')} title="Código (`código`)">
-                <Code size={14} />
-              </Button>
-            </div>
+        {/* Tabs Bar */}
+        <div className="flex items-center px-2 border-b border-border/40 bg-muted/10 overflow-x-auto no-scrollbar shrink-0 h-10">
+          <div 
+            onClick={() => setActiveTabId('main')}
+            className={cn(
+              "flex items-center gap-2 px-4 h-full text-xs font-medium border-r border-border/20 cursor-pointer transition-colors min-w-[120px] max-w-[200px]",
+              activeTabId === 'main' 
+                ? "bg-background text-foreground border-t-2 border-t-orange-500" 
+                : "text-muted-foreground hover:bg-muted/20 hover:text-foreground"
+            )}
+          >
+            <PenLine size={14} className="shrink-0" />
+            <span className="truncate">Documento Principal</span>
           </div>
 
-          {/* Botão de Alternar Visualização */}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className={cn("gap-2 h-8 text-xs font-medium", isPreviewMode && "bg-accent text-accent-foreground")}
-            onClick={() => setIsPreviewMode(!isPreviewMode)}
-          >
-            {isPreviewMode ? (
-              <>
-                <PenLine size={14} />
-                Editar
-              </>
-            ) : (
-              <>
-                <Eye size={14} />
-                Visualizar
-              </>
-            )}
-          </Button>
+          {openFiles.map(fileId => {
+            if (fileId === 'main') return null;
+            const file = uploadedFiles.find(f => f.id === fileId);
+            if (!file) return null;
+
+            return (
+              <div 
+                key={file.id}
+                onClick={() => setActiveTabId(file.id)}
+                className={cn(
+                  "flex items-center gap-2 px-4 h-full text-xs font-medium border-r border-border/20 cursor-pointer transition-colors group min-w-[120px] max-w-[200px]",
+                  activeTabId === file.id 
+                    ? "bg-background text-foreground border-t-2 border-t-orange-500" 
+                    : "text-muted-foreground hover:bg-muted/20 hover:text-foreground"
+                )}
+              >
+                <span className="shrink-0 opacity-70">{getFileIcon(file.type)}</span>
+                <span className="truncate">{file.name}</span>
+                <button 
+                  onClick={(e) => handleCloseTab(file.id, e)}
+                  className="ml-auto p-0.5 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Document Canvas */}
-        <div className="flex-1 overflow-y-auto bg-background">
-          <div className="max-w-3xl mx-auto py-12 px-8 min-h-full">
-            {isPreviewMode ? (
-              // Modo Visualização (Markdown Renderizado)
-              <div className="prose prose-lg prose-zinc dark:prose-invert max-w-none prose-headings:font-serif prose-p:leading-relaxed cursor-text min-h-[60vh]" onClick={() => setIsPreviewMode(false)}>
-                {content ? (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {content}
-                  </ReactMarkdown>
-                ) : (
-                  <span className="text-muted-foreground/40">Nada para visualizar...</span>
-                )}
+        {/* Content Area: Editor OR Viewer */}
+        <div className="flex-1 overflow-hidden relative bg-background">
+          {activeTabId === 'main' ? (
+            <div className="flex flex-col h-full">
+              {/* Toolbar (Only visible in Editor Mode) */}
+              <div className="px-6 py-3 border-b border-border/40 flex items-center justify-between gap-2 overflow-x-auto no-scrollbar shrink-0 bg-background">
+                <div className="flex items-center gap-2">
+                  <Select defaultValue="paragraph">
+                    <SelectTrigger className="w-[120px] h-8 border-none bg-transparent focus:ring-0 text-xs font-medium text-muted-foreground hover:bg-accent/50">
+                      <SelectValue placeholder="Estilo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="paragraph">Parágrafo</SelectItem>
+                      <SelectItem value="h1">Título 1</SelectItem>
+                      <SelectItem value="h2">Título 2</SelectItem>
+                      <SelectItem value="h3">Título 3</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Separator orientation="vertical" className="h-5" />
+
+                  <div className="flex items-center gap-0.5">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => handleToolbarAction(e, 'bold')} title="Negrito (**texto**)">
+                      <Bold size={14} />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => handleToolbarAction(e, 'italic')} title="Itálico (*texto*)">
+                      <Italic size={14} />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => handleToolbarAction(e, 'list')} title="Lista (- item)">
+                      <List size={14} />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => handleToolbarAction(e, 'code')} title="Código (`código`)">
+                      <Code size={14} />
+                    </Button>
+                  </div>
+                </div>
+
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={cn("gap-2 h-8 text-xs font-medium", isPreviewMode && "bg-accent text-accent-foreground")}
+                  onClick={() => setIsPreviewMode(!isPreviewMode)}
+                >
+                  {isPreviewMode ? (
+                    <>
+                      <PenLine size={14} />
+                      Editar
+                    </>
+                  ) : (
+                    <>
+                      <Eye size={14} />
+                      Visualizar
+                    </>
+                  )}
+                </Button>
               </div>
-            ) : (
-              // Modo Edição (Textarea)
-              <textarea
-                id="editor-textarea"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Começar a digitar... (Use Markdown para formatar)"
-                className="w-full h-full min-h-[60vh] bg-transparent resize-none border-none outline-none text-base leading-relaxed placeholder:text-muted-foreground/40 focus:ring-0 font-mono text-sm md:text-base"
-              />
-            )}
-          </div>
+
+              {/* Editor Canvas */}
+              <div className="flex-1 overflow-y-auto bg-background">
+                <div className="max-w-3xl mx-auto py-12 px-8 min-h-full">
+                  {isPreviewMode ? (
+                    <div className="prose prose-lg prose-zinc dark:prose-invert max-w-none prose-headings:font-serif prose-p:leading-relaxed cursor-text min-h-[60vh]" onClick={() => setIsPreviewMode(false)}>
+                      {content ? (
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {content}
+                        </ReactMarkdown>
+                      ) : (
+                        <span className="text-muted-foreground/40">Nada para visualizar...</span>
+                      )}
+                    </div>
+                  ) : (
+                    <textarea
+                      id="editor-textarea"
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      placeholder="Começar a digitar... (Use Markdown para formatar)"
+                      className="w-full h-full min-h-[60vh] bg-transparent resize-none border-none outline-none text-base leading-relaxed placeholder:text-muted-foreground/40 focus:ring-0 font-mono text-sm md:text-base"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            // Viewer Mode
+            renderFileViewer()
+          )}
         </div>
       </div>
 
       {/* Right Chat Sidebar */}
       {isSidebarOpen && (
-        <div className="w-[400px] border-l border-border bg-card/50 backdrop-blur-sm flex flex-col h-full animate-in slide-in-from-right-10 duration-300 shadow-xl z-10">
+        <div className="w-[400px] border-l border-border bg-card/50 backdrop-blur-sm flex flex-col h-full animate-in slide-in-from-right-10 duration-300 shadow-xl z-10 shrink-0">
           
           {/* VIEW: SOURCES */}
           {sidebarView === 'sources' ? (
@@ -461,16 +888,26 @@ const Editor: React.FC = () => {
                   // List of Files
                   <div className="space-y-3">
                     {uploadedFiles.map((file) => (
-                      <div key={file.id} className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border shadow-sm hover:shadow-md transition-shadow group">
+                      <div 
+                        key={file.id} 
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-xl border shadow-sm hover:shadow-md transition-all group cursor-pointer",
+                          activeTabId === file.id ? "bg-accent border-orange-200 dark:border-orange-800" : "bg-card border-border hover:border-orange-100 dark:hover:border-orange-900/30"
+                        )}
+                        onClick={() => handleOpenFile(file.id)}
+                      >
                         <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center shrink-0", getFileColorClass(file.type))}>
                           {getFileIcon(file.type)}
                         </div>
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 text-left">
                           <p className="text-sm font-medium text-foreground truncate" title={file.name}>{file.name}</p>
                           <p className="text-xs text-muted-foreground uppercase tracking-wider">{file.type}</p>
                         </div>
                         <button 
-                          onClick={() => handleRemoveFile(file.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRemoveFile(file.id);
+                          }}
                           className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all"
                           title="Remover arquivo"
                         >
