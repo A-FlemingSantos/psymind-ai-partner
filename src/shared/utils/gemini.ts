@@ -78,6 +78,16 @@ export const sendMessageToGemini = async (
   } catch (error: any) {
     console.error("Erro detalhado do Gemini:", error);
 
+    // Tratamento para excesso de uso da cota/quota
+    if (
+      error.message?.toLowerCase().includes('quota') ||
+      error.message?.toLowerCase().includes('exceeded') ||
+      error.toString().toLowerCase().includes('quota') ||
+      error.toString().toLowerCase().includes('exceeded')
+    ) {
+      return "⚠️ **Limite de uso excedido:** Sua cota de requisições à IA foi atingida. Aguarde um tempo ou troque a chave de API. Se for recorrente, revise seu plano no Google Cloud.";
+    }
+
     // 4. Tratamento específico para erros de API Key que passam pela validação inicial
     if (
       error.message?.includes('API key') || 
