@@ -7,13 +7,13 @@ const FlowerDoodle: React.FC = () => (
     viewBox="0 0 200 200" 
     fill="none" 
     xmlns="http://www.w3.org/2000/svg" 
-    // Alterado: Adicionado 'dark:text-zinc-200' para tornar os traços claros no modo escuro
-    className="text-zinc-800 dark:text-zinc-200 opacity-90 animate-in fade-in duration-1000"
+    // Alterado: Removido 'animate-in fade-in duration-1000' para evitar flicker na troca de tema
+    className="text-zinc-800 dark:text-zinc-200 opacity-90 transition-colors"
   >
     <g stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       {/* Stem */}
       {/* Alterado: Adicionado 'dark:text-orange-300' para o caule aparecer no fundo escuro */}
-      <path d="M100 190 C100 190 105 160 100 120" className="text-orange-900 dark:text-orange-300" />
+      <path d="M100 190 C100 190 105 160 100 120" className="text-orange-900 dark:text-orange-300 transition-colors" />
       {/* Leaves */}
       <path d="M100 150 C100 150 130 145 140 130" />
       <path d="M100 160 C100 160 70 155 60 140" />
@@ -26,7 +26,7 @@ const FlowerDoodle: React.FC = () => (
       <path d="M100 120 C80 110 75 90 95 80 C105 75 100 120 100 120" />
 
       {/* Center */}
-      <circle cx="100" cy="120" r="6" fill="currentColor" className="text-orange-400 stroke-none" />
+      <circle cx="100" cy="120" r="6" fill="currentColor" className="text-orange-400 stroke-none transition-colors" />
     </g>
   </svg>
 );

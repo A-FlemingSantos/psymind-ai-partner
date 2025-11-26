@@ -15,7 +15,7 @@ import {
   Wrench
 } from 'lucide-react';
 import NavItem from './NavItem';
-import { cn } from '@/shared/utils';
+import { cn } from '@/shared/utils/utils';
 import { useChat } from '@/features/chat';
 import { useGlobalSettings } from '@/features/settings';
 import { formatRelativeDate } from '@/shared/utils/date-format';
@@ -37,9 +37,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, togg
     setActiveTab(tab);
     localStorage.setItem('activeTab', tab);
     
+    // Lógica unificada de navegação
     if (tab === 'calendar') {
       navigate('/calendar');
-    } else if (tab === 'dashboard') {
+    } else {
+      // Para dashboard, projects, tools, ou conversations, garantimos que vá para o workspace
       navigate('/workspace');
     }
   };
@@ -106,10 +108,9 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, togg
           icon={<Wrench size={20} />} 
           label="Ferramentas" 
           active={activeTab === 'tools'} 
-          onClick={() => setActiveTab('tools')} 
+          onClick={() => handleNavigation('tools')} 
           isCollapsed={!isOpen}
         />
-
 
         {/* Seção Conversas (Expansível) */}
         {!isOpen ? (

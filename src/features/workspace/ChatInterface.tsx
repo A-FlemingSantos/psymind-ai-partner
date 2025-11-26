@@ -457,7 +457,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const chatTitle = currentConversation?.title || initialPrompt.split(' ').slice(0, 5).join(' ') + '...';
 
   return (
-    <div className="flex flex-col h-screen max-h-screen bg-[#FFFBF7] animate-in fade-in duration-500 font-sans">
+    <div className="flex flex-col h-screen max-h-screen bg-[#FFFBF7] font-sans">
       {/* Header */}
       <header className="flex-none px-8 py-6 border-b border-orange-100/50 bg-[#FFFBF7]/80 backdrop-blur-md sticky top-0 z-10 flex justify-between items-center">
         <div className="flex items-center gap-4">

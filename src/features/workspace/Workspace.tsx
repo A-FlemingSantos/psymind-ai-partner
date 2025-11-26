@@ -199,7 +199,7 @@ const Workspace: React.FC = () => {
           toggle={() => setIsSidebarOpen(!isSidebarOpen)}
         />
         <main className={cn(
-          "h-full w-full transition-all duration-300 ease-in-out relative",
+          "flex-1 h-screen overflow-hidden transition-all duration-300 ease-in-out relative",
           isSidebarOpen ? "md:ml-64" : "md:ml-20"
         )}>
           <ChatInterface 
@@ -214,7 +214,6 @@ const Workspace: React.FC = () => {
   }
 
   return (
-    // CORRIGIDO: bg-[#FFFBF7] -> bg-background, text-zinc-900 -> text-foreground
     <div className="h-screen bg-background font-sans text-foreground selection:bg-orange-200 flex">
       <Sidebar 
         activeTab={activeTab} 
@@ -285,14 +284,14 @@ const Workspace: React.FC = () => {
             
             {/* Input de Chat IA */}
             <div className="w-full max-w-2xl mt-8 relative group animate-in fade-in zoom-in-95 duration-700 delay-150">
-              <div className="relative bg-card rounded-[2rem] shadow-2xl shadow-orange-500/10 border border-border p-2 focus-within:ring-2 focus-within:ring-orange-200 transition-all duration-300">
+              <div className="relative bg-card rounded-[2rem] shadow-2xl shadow-orange-500/10 border border-border p-2 focus-within:border-orange-300 focus-within:ring-0 focus-within:ring-offset-0 transition-all duration-300">
                 <textarea
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={`Digite para perguntar ao seu ${getModeTranslation(selectedMode).toLowerCase()}...`}
                   aria-label="Campo de entrada para conversa com assistente"
-                  className="w-full min-h-[120px] p-4 pr-4 bg-transparent border-none resize-none focus:outline-none text-foreground placeholder:text-muted-foreground text-lg leading-relaxed rounded-2xl pb-16"
+                  className="w-full min-h-[120px] p-4 pr-4 bg-transparent border-none resize-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground placeholder:text-muted-foreground text-lg leading-relaxed rounded-2xl pb-16"
                 />
                 
                 {/* Barra de Ferramentas Inferior */}

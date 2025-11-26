@@ -72,11 +72,6 @@ const Register = () => {
     navigate("/workspace");
   };
 
-  const passwordStrength = password.length > 0 ? (
-    password.length < 6 ? 'weak' :
-    password.length < 10 ? 'medium' : 'strong'
-  ) : null;
-
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6 py-12">
       {/* Background decorative gradient */}
@@ -171,21 +166,7 @@ const Register = () => {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              {passwordStrength && (
-                <div className="flex items-center gap-2 text-xs">
-                  <div className={`flex-1 h-1.5 rounded-full ${
-                    passwordStrength === 'weak' ? 'bg-red-500' :
-                    passwordStrength === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                  }`} style={{ width: `${password.length * 10}%` }} />
-                  <span className={`${
-                    passwordStrength === 'weak' ? 'text-red-500' :
-                    passwordStrength === 'medium' ? 'text-yellow-500' : 'text-green-500'
-                  }`}>
-                    {passwordStrength === 'weak' ? 'Fraca' :
-                     passwordStrength === 'medium' ? 'Média' : 'Forte'}
-                  </span>
-                </div>
-              )}
+              {/* Removed Password Strength Indicator Block */}
               {errors.password && (
                 <p className="text-sm text-red-500 animate-fade-in">{errors.password}</p>
               )}
