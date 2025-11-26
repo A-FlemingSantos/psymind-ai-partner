@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Menu, ArrowRight, ShieldCheck, Sparkles, Clock, Quote, Instagram, Twitter, Linkedin, Bot, MoreHorizontal, ArrowUp, Flower2, Sun, Moon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/components/ui/button";
 import { useTheme } from "next-themes";
 
 const Index = () => {
@@ -39,8 +39,15 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
+      {/* Skip Links para acessibilidade */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-foreground text-background px-4 py-2 rounded-md z-50 transition-all"
+      >
+        Pular para o conteúdo principal
+      </a>
       {/* Navigation */}
-      <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-background/80 backdrop-blur-md shadow-sm' : 'bg-transparent'}`}>
+      <nav role="navigation" className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-background/80 backdrop-blur-md shadow-sm' : 'bg-transparent'}`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <a href="#" className="font-serif text-2xl font-semibold tracking-tight flex items-center gap-2 text-foreground">
             <div className="w-2 h-2 bg-foreground rounded-full"></div>
@@ -48,19 +55,19 @@ const Index = () => {
           </a>
           
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
-            <a href="#funcionalidades" className="hover:text-orange-500 transition-colors">Como funciona</a>
-            <a href="#filosofia" className="hover:text-orange-500 transition-colors">Filosofia</a>
+            <a href="#funcionalidades" className="hover:text-orange-500 transition-colors focus-ring rounded-md px-2 py-1">Como funciona</a>
+            <a href="#filosofia" className="hover:text-orange-500 transition-colors focus-ring rounded-md px-2 py-1">Filosofia</a>
             
             {/* Theme Toggle */}
             <button 
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2 rounded-full hover:bg-accent hover:text-foreground transition-colors"
+              className="p-2 rounded-full hover:bg-accent hover:text-foreground transition-colors relative"
             >
               <Sun size={20} className="rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon size={20} className="absolute top-2 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <Moon size={20} className="absolute inset-2 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
             </button>
 
-            <Link to="/login" className="hover:text-orange-500 transition-colors">Login</Link>
+            <Link to="/login" className="hover:text-orange-500 transition-colors focus-ring rounded-md px-2 py-1">Login</Link>
             <Link to="/register">
               <Button className="bg-foreground text-background hover:opacity-90 rounded-full px-5 py-2.5 transition-all transform hover:scale-105">
                 Começar Agora
@@ -68,31 +75,46 @@ const Index = () => {
             </Link>
           </div>
 
-          <button className="md:hidden text-foreground" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <button 
+            className="md:hidden text-foreground p-2 rounded-lg hover:bg-accent transition-colors" 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
+            aria-expanded={mobileMenuOpen}
+          >
             <Menu className="w-6 h-6" />
           </button>
         </div>
         
         {mobileMenuOpen && (
-          <div className="md:hidden bg-background p-6 border-b border-border">
+          <div className="md:hidden bg-background/95 backdrop-blur-md p-6 border-b border-border animate-in slide-in-from-top-2 duration-200">
             <div className="flex flex-col gap-4 text-center">
-              <a href="#funcionalidades" className="text-foreground hover:text-orange-500 transition-colors">Como funciona</a>
-              <a href="#filosofia" className="text-foreground hover:text-orange-500 transition-colors">Filosofia</a>
-              <Link to="/login" className="text-foreground hover:text-orange-500 transition-colors">Login</Link>
-              <Link to="/register">
-                <Button className="bg-foreground text-background hover:opacity-90 rounded-full">
-                  Começar Agora
-                </Button>
-              </Link>
+              <a href="#funcionalidades" className="text-foreground hover:text-orange-500 transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Como funciona</a>
+              <a href="#filosofia" className="text-foreground hover:text-orange-500 transition-colors py-2" onClick={() => setMobileMenuOpen(false)}>Filosofia</a>
+              <Link to="/login" className="text-foreground hover:text-orange-500 transition-colors py-2">Login</Link>
+              <div className="pt-2">
+                <Link to="/register">
+                  <Button className="bg-foreground text-background hover:opacity-90 rounded-full w-full">
+                    Começar Agora
+                  </Button>
+                </Link>
+              </div>
+              <button 
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="flex items-center justify-center gap-2 p-2 rounded-full hover:bg-accent transition-colors mx-auto"
+              >
+                <Sun size={16} className="rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon size={16} className="absolute rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span className="text-sm ml-6">{theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}</span>
+              </button>
             </div>
           </div>
         )}
       </nav>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex flex-col justify-center items-center pt-20 pb-12 px-6 overflow-hidden">
+      <main id="main-content" className="relative min-h-screen flex flex-col justify-center items-center pt-20 pb-12 px-6 overflow-hidden">
         {/* SVG Flower Decoration */}
-        <div className="mb-8 opacity-80 animate-float">
+        <div className="mb-8 opacity-80 animate-float" aria-hidden="true">
           <svg width="80" height="120" viewBox="0 0 100 150" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M50 140C50 140 55 100 45 70" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="text-foreground"/>
             <path d="M50 110C40 105 30 115 50 120" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-foreground"/>
@@ -113,12 +135,12 @@ const Index = () => {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center reveal active" style={{ transitionDelay: '0.4s' }}>
             <Link to="/register">
-              <Button className="bg-foreground text-background hover:opacity-90 px-8 py-4 rounded-full text-lg font-medium transition-all flex items-center gap-2">
-                Iniciar Conversa <ArrowRight className="w-4 h-4" />
+              <Button className="bg-foreground text-background hover:opacity-90 px-8 py-4 rounded-full text-lg font-medium transition-all flex items-center gap-2 hover-lift group">
+                Iniciar Conversa <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
               </Button>
             </Link>
             <a href="#funcionalidades">
-              <Button variant="outline" className="px-8 py-4 rounded-full text-lg font-medium border-border hover:bg-accent text-foreground">
+              <Button variant="outline" className="px-8 py-4 rounded-full text-lg font-medium border-border hover:bg-accent text-foreground hover-lift">
                 Saiba Mais
               </Button>
             </a>
@@ -126,7 +148,7 @@ const Index = () => {
         </div>
 
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-orange-200/30 rounded-full blur-3xl -z-10 pointer-events-none dark:bg-orange-900/20"></div>
-      </section>
+      </main>
 
       {/* Chat Preview Section */}
       <section className="pb-24 px-4 flex justify-center relative z-10">
@@ -203,8 +225,8 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="p-8 rounded-3xl bg-secondary hover:bg-accent transition-colors duration-300 reveal" style={{ transitionDelay: '0.1s' }}>
-              <div className="w-12 h-12 bg-card rounded-2xl flex items-center justify-center mb-6 shadow-sm text-orange-500">
+            <div className="p-8 rounded-3xl bg-secondary hover:bg-accent transition-all duration-300 reveal hover-lift stagger-item" style={{ transitionDelay: '0.1s' }}>
+              <div className="w-12 h-12 bg-card rounded-2xl flex items-center justify-center mb-6 shadow-sm text-orange-500 transition-transform duration-300 group-hover:scale-110">
                 <ShieldCheck className="w-6 h-6" />
               </div>
               <h3 className="font-serif text-2xl mb-3 text-foreground">Privacidade Total</h3>
@@ -213,8 +235,8 @@ const Index = () => {
               </p>
             </div>
 
-            <div className="p-8 rounded-3xl bg-secondary hover:bg-accent transition-colors duration-300 reveal" style={{ transitionDelay: '0.2s' }}>
-              <div className="w-12 h-12 bg-card rounded-2xl flex items-center justify-center mb-6 shadow-sm text-orange-500">
+            <div className="p-8 rounded-3xl bg-secondary hover:bg-accent transition-all duration-300 reveal hover-lift stagger-item" style={{ transitionDelay: '0.2s' }}>
+              <div className="w-12 h-12 bg-card rounded-2xl flex items-center justify-center mb-6 shadow-sm text-orange-500 transition-transform duration-300 group-hover:scale-110">
                 <Sparkles className="w-6 h-6" />
               </div>
               <h3 className="font-serif text-2xl mb-3 text-foreground">Insights Edificantes</h3>
@@ -223,8 +245,8 @@ const Index = () => {
               </p>
             </div>
 
-            <div className="p-8 rounded-3xl bg-secondary hover:bg-accent transition-colors duration-300 reveal" style={{ transitionDelay: '0.3s' }}>
-              <div className="w-12 h-12 bg-card rounded-2xl flex items-center justify-center mb-6 shadow-sm text-orange-500">
+            <div className="p-8 rounded-3xl bg-secondary hover:bg-accent transition-all duration-300 reveal hover-lift stagger-item" style={{ transitionDelay: '0.3s' }}>
+              <div className="w-12 h-12 bg-card rounded-2xl flex items-center justify-center mb-6 shadow-sm text-orange-500 transition-transform duration-300 group-hover:scale-110">
                 <Clock className="w-6 h-6" />
               </div>
               <h3 className="font-serif text-2xl mb-3 text-foreground">Sempre Disponível</h3>
@@ -256,8 +278,9 @@ const Index = () => {
           <h2 className="font-serif text-4xl mb-6 text-foreground">Pronto para organizar sua mente?</h2>
           <p className="text-muted-foreground mb-8">Junte-se a milhares de pessoas que encontraram clareza com o PsyMind.</p>
           <Link to="/register">
-            <Button className="bg-orange-500 hover:bg-orange-400 text-white px-10 py-4 rounded-full text-lg font-medium transition-all shadow-lg shadow-orange-500/30 transform hover:-translate-y-1">
+            <Button className="bg-orange-500 hover:bg-orange-400 text-white px-10 py-4 rounded-full text-lg font-medium transition-all shadow-lg shadow-orange-500/30 hover-lift group">
               Experimentar Gratuitamente
+              <ArrowRight className="w-4 h-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" />
             </Button>
           </Link>
           <p className="mt-4 text-sm text-muted-foreground">Não requer cartão de crédito • Cancelamento a qualquer momento</p>
@@ -326,6 +349,20 @@ const Index = () => {
         .reveal.active {
           opacity: 1;
           transform: translateY(0);
+        }
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+        }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
     </div>
